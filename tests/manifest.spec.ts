@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { GOOGLE_DOMAINS } from "../src/google-domains";
-import { createManifest } from "../src/manifest";
+import { BRAND } from "../src/brand";
+import { ICON_SIZES, createManifest } from "../src/manifest";
 
 const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as { version: string };
 
@@ -30,12 +31,35 @@ describe("manifest", () => {
     expect(new Set(GOOGLE_DOMAINS).size).toBe(GOOGLE_DOMAINS.length);
   });
 
+  it("is branded Rung, with a store-friendly title and summary", () => {
+    expect(manifest.name).toBe(BRAND.storeTitle);
+    expect(manifest.name.startsWith("Rung")).toBe(true);
+    expect(manifest.name.length).toBeLessThanOrEqual(75);
+    expect(manifest.description.length).toBeLessThanOrEqual(132);
+  });
+
+  it("never puts a third-party trademark in the extension's name", () => {
+    expect(manifest.name.toLowerCase()).not.toContain("google");
+  });
+
+  it("ships every icon size the store and toolbar need, with the right pixel size", () => {
+    expect([...ICON_SIZES]).toEqual([16, 32, 48, 128]);
+    for (const size of ICON_SIZES) {
+      const file = resolve(process.cwd(), "public/icons", `icon${size}.png`);
+      expect(existsSync(file), `icon${size}.png`).toBe(true);
+      const png = readFileSync(file);
+      expect(png.subarray(1, 4).toString()).toBe("PNG");
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([size, size]);
+      expect(manifest.icons[String(size)]).toBe(`icons/icon${size}.png`);
+      expect(manifest.action.default_icon[String(size)]).toBe(`icons/icon${size}.png`);
+    }
+  });
+
   it("declares the toolbar popup", () => {
     expect(manifest.action.default_popup).toBe("popup.html");
   });
 
   it("references the built script and icon", () => {
     expect(script.js).toEqual(["contentScript.js"]);
-    expect(manifest.icons["128"]).toBe("icons/icon128.png");
   });
 });

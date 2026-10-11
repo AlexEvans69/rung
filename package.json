@@ -1,7 +1,7 @@
 {
-  "name": "serp-counter-tool",
-  "version": "4.1.1",
-  "description": "Numbers organic Google results and lets you attach notes to any URL or domain",
+  "name": "rung",
+  "version": "4.2.0",
+  "description": "Rung: numbers organic search results and pins notes to any page or site",
   "author": "Alexey Bogomolov",
   "private": true,
   "type": "module",
@@ -15,7 +15,8 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "package": "npm run build && cd dist && zip -qr ../serp-counter-tool.zip .",
     "test:e2e": "npm run build && playwright test",
-    "clean": "node -e \"import('node:fs').then(f=>f.rmSync('dist',{recursive:true,force:true}))\""
+    "clean": "node -e \"import('node:fs').then(f=>f.rmSync('dist',{recursive:true,force:true}))\"",
+    "store-assets": "npm run build && STORE_ASSETS=1 playwright test e2e/store-assets.spec.ts"
   },
   "dependencies": {
     "vue": "^3.5.0"

@@ -1,0 +1,130 @@
+/**
+ * Generates the Chrome Web Store images into store/ (screenshots 1280x800, small promo tile
+ * 440x280, marquee 1400x560). Content is fictional on purpose: no third-party brands.
+ *
+ *   npm run store-assets
+ */
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { extname, join, resolve } from "node:path";
+import { expect, test, type Page } from "@playwright/test";
+import { serpPage, type ResultSpec } from "./fixtures";
+
+test.skip(!process.env.STORE_ASSETS, "run with `npm run store-assets`");
+test.describe.configure({ mode: "serial" });
+
+const ROOT = process.cwd();
+const OUT = resolve(ROOT, "store");
+const DIST = resolve(ROOT, "dist");
+const BUNDLE = readFileSync(join(DIST, "contentScript.js"), "utf8");
+const LOGO = readFileSync(resolve(ROOT, "brand/rung.svg"), "utf8");
+mkdirSync(OUT, { recursive: true });
+
+const RESULTS: ResultSpec[] = [
+  { host: "northwind-phones.example", title: "Refurbished smartphones with a 12-month warranty", thumbnail: true, rating: true },
+  { host: "pocketshop.example", title: "Compare the best smartphone deals this month", snippet: "Side-by-side prices from 40 shops, updated every hour. Filter by storage, colour and battery health, and see which offers include free delivery and returns." },
+  { host: "handset-hub.example", title: "Certified refurbished phones: up to 50% off, free delivery and returns", thumbnail: true, rating: true },
+  { host: "mobilemarket.example", title: "Buying a smartphone: the complete guide", thumbnail: true },
+  { host: "telco-direct.example", title: "Phone deals and monthly plans", sitelinks: true },
+];
+
+const SEED = {
+  "n:s:pocketshop.example": "Main competitor. Strong comparison pages, thin reviews — we can beat them on the buying guide.",
+  "n:u:https://northwind-phones.example/p0": "Ranks #1 for the money query. Check their schema markup and the FAQ block.",
+  "n:s:handset-hub.example": "Affiliate site.",
+};
+
+async function openSerp(page: Page, dark: boolean): Promise<void> {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setContent(serpPage({ results: RESULTS, dark, query: "refurbished smartphones" }));
+  await page.evaluate((s) => Object.assign((window as never as { __mem: object }).__mem, s), SEED);
+  await page.addScriptTag({ content: BUNDLE });
+  await page.waitForSelector("serp-counter-host", { state: "attached" });
+  await page.waitForTimeout(500);
+}
+
+const shot = (page: Page, name: string) => page.screenshot({ path: join(OUT, name) });
+const host = (page: Page, i: number) => page.locator("serp-counter-host").nth(i);
+
+test("1 results, light", async ({ page }) => {
+  await openSerp(page, false);
+  await shot(page, "screenshot-1-results.png");
+});
+
+test("2 results, dark", async ({ page }) => {
+  await openSerp(page, true);
+  await shot(page, "screenshot-2-dark.png");
+});
+
+test("3 note editor", async ({ page }) => {
+  await openSerp(page, false);
+  await host(page, 1).locator(".card-head").click();
+  await expect(page.locator("#serp-counter-app .editor")).toBeVisible();
+  await shot(page, "screenshot-3-note-editor.png");
+});
+
+test("4 badge colours", async ({ page }) => {
+  await openSerp(page, true);
+  await host(page, 0).locator(".badge").click();
+  await page.locator("#serp-counter-app .colors").getByRole("button", { name: "Violet" }).click();
+  await shot(page, "screenshot-4-colours.png");
+});
+
+test("5 toolbar popup", async ({ page }) => {
+  await page.route("http://ext.test/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/^\//, "") || "popup.html";
+    const file = join(DIST, path);
+    const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
+    return existsSync(file)
+      ? route.fulfill({ body: readFileSync(file), contentType: types[extname(file)] ?? "application/octet-stream" })
+      : route.fulfill({ status: 404 });
+  });
+  await page.addInitScript(() => {
+    if (location.hostname !== "ext.test") return;
+    const mem: Record<string, unknown> = { "n:s:a.example": "x", "n:u:https://b.example/": "y", "n:s:c.example": "z", "n:s:d.example": "w" };
+    (window as never as { chrome: object }).chrome = {
+      runtime: { id: "x", getManifest: () => ({ version: "4.2.0" }), getURL: (p: string) => "http://ext.test/" + p },
+      storage: {
+        local: { get: async () => JSON.parse(JSON.stringify(mem)), set: async () => undefined, remove: async () => undefined },
+        onChanged: { addListener() {}, removeListener() {} },
+      },
+    };
+  });
+  await openSerp(page, false);
+  await page.evaluate(() => {
+    const frame = document.createElement("iframe");
+    frame.src = "http://ext.test/popup.html";
+    frame.style.cssText =
+      "position:fixed;top:16px;right:32px;width:320px;height:372px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:#fff;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:2147483647";
+    document.body.appendChild(frame);
+  });
+  await page.waitForTimeout(600);
+  await shot(page, "screenshot-5-toolbar.png");
+});
+
+function promoHtml(width: number, height: number, withShot: boolean): string {
+  const shotData = withShot
+    ? `data:image/png;base64,${readFileSync(join(OUT, "screenshot-1-results.png")).toString("base64")}`
+    : "";
+  const big = width > 1000;
+  return `<!doctype html><meta charset="utf-8"><style>
+*{box-sizing:border-box}
+body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#17183f;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:space-between;gap:${big ? 56 : 22}px;padding:${big ? "0 72px" : "0 28px"}}
+.l{flex:none}
+.logo svg{width:${big ? 124 : 72}px;height:${big ? 124 : 72}px;display:block}
+h1{margin:${big ? "26px 0 10px" : "14px 0 4px"};font-size:${big ? 76 : 42}px;letter-spacing:-.02em;line-height:1}
+p{margin:0;font-size:${big ? 27 : 15}px;color:#c9caf5;line-height:1.35;max-width:${big ? 440 : 200}px}
+.s{flex:none;width:${big ? 700 : 0}px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 24px 56px rgba(0,0,0,.45);display:${withShot ? "block" : "none"}}
+.s img{width:100%;display:block}
+</style><div class="l"><div class="logo">${LOGO}</div><h1>Rung</h1><p>Number every result. Pin notes where you search.</p></div>
+<div class="s">${withShot ? `<img src="${shotData}">` : ""}</div>`;
+}
+
+test("6 promo tiles", async ({ page }) => {
+  await page.setViewportSize({ width: 440, height: 280 });
+  await page.setContent(promoHtml(440, 280, false));
+  await page.screenshot({ path: join(OUT, "promo-small-440x280.png") });
+
+  await page.setViewportSize({ width: 1400, height: 560 });
+  await page.setContent(promoHtml(1400, 560, true));
+  await page.screenshot({ path: join(OUT, "promo-marquee-1400x560.png") });
+});

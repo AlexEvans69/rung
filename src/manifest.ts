@@ -1,4 +1,9 @@
+import { BRAND } from "./brand";
 import { GOOGLE_DOMAINS } from "./google-domains";
+
+export const ICON_SIZES = [16, 32, 48, 128] as const;
+
+const icons = Object.fromEntries(ICON_SIZES.map((size) => [String(size), `icons/icon${size}.png`]));
 
 /** The content script only has to run on the search results page, not on Maps, Drive, etc. */
 export const SEARCH_PATH = "/search*";
@@ -10,10 +15,9 @@ export function createMatches(domains: readonly string[] = GOOGLE_DOMAINS): stri
 export function createManifest(version: string) {
   return {
     manifest_version: 3,
-    name: "SERP Counter + Notes - Free SERP Tool for SEO",
+    name: BRAND.storeTitle,
     version,
-    description:
-      "Adds a counter to organic Google results + save notes for any site (URL or entire domain)",
+    description: BRAND.description,
     permissions: ["storage"],
     content_scripts: [
       {
@@ -23,10 +27,10 @@ export function createManifest(version: string) {
       },
     ],
     action: {
-      default_title: "SERP Counter + Notes",
+      default_title: BRAND.name,
       default_popup: "popup.html",
-      default_icon: { "128": "icons/icon128.png" },
+      default_icon: icons,
     },
-    icons: { "128": "icons/icon128.png" },
+    icons,
   };
 }

@@ -18,8 +18,10 @@ export interface PageOpts {
   positionedResults?: boolean;
   /** Clip anything outside the main column. */
   clipColumn?: boolean;
-  /** `?start=` offset. */
+  /** People-also-ask row above the results. */
   paa?: boolean;
+  /** Shows a search box with this query instead of a plain "Search bar" label. */
+  query?: string;
 }
 
 export const DEFAULT_RESULTS: ResultSpec[] = [
@@ -30,7 +32,7 @@ export const DEFAULT_RESULTS: ResultSpec[] = [
   { host: "o2.co.uk", title: "iPhone deals", sitelinks: true },
 ];
 
-const SNIPPET = "Purchase your next iPhone from the Apple Store. Get answers about network providers, offers, payments, trade-in, setup and more.";
+const SNIPPET = "Compare prices, read verified reviews and find the best offer for your next phone. Free delivery and easy returns on most orders.";
 
 function result(r: ResultSpec, i: number, positioned: boolean): string {
   const slug = r.host.replace(/[^a-z0-9]/g, "");
@@ -63,6 +65,7 @@ body{font-family:arial,sans-serif;background:${dark ? "#202124" : "#fff"};color:
 header{position:sticky;top:0;height:64px;background:${dark ? "#303134" : "#fff"};border-bottom:1px solid #8884;z-index:50;padding:16px 160px}
 #center_col{margin-left:160px;width:652px;padding-top:12px;${opts.clipColumn ? "overflow:hidden;" : ""}}
 #rhs{position:absolute;top:84px;left:900px;width:340px;height:300px;background:${dark ? "#303134" : "#f1f3f4"};border-radius:12px}
+.q{display:flex;align-items:center;gap:10px;width:560px;height:42px;margin-top:-6px;padding:0 18px;border-radius:21px;border:1px solid ${dark ? "#5f6368" : "#dfe1e5"};background:${dark ? "#202124" : "#fff"};color:${dark ? "#e8eaed" : "#202124"};font-size:16px}
 .MjjYud{margin-bottom:28px}
 .res{display:block}
 .meta{display:flex;align-items:center;gap:12px;height:28px;margin-bottom:6px}
@@ -89,7 +92,11 @@ h3{margin:0;font-size:20px;line-height:26px;font-weight:400;color:${dark ? "#8ab
   window.__mem=mem;
 })();
 </script></head><body>
-<header>Search bar</header>
+<header>${
+    opts.query
+      ? `<div class="q"><span>⌕</span>${opts.query}</div>`
+      : "Search bar"
+  }</header>
 <div id="center_col"><div id="search"><div id="rso">${paa}${html}</div></div></div>
 ${opts.knowledgePanel ? '<div id="rhs">Knowledge panel</div>' : ""}
 </body></html>`;

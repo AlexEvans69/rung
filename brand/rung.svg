@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Rung</title>
+  <rect width="128" height="128" rx="30" fill="#5b5fe0"/>
+  <g stroke-linecap="round" fill="none">
+    <path d="M47 18 31 110" stroke="#ffffff" stroke-width="13"/>
+    <path d="M81 18 97 110" stroke="#ffffff" stroke-width="13"/>
+    <path d="M44 38H84" stroke="#ffffff" stroke-opacity=".55" stroke-width="10"/>
+    <path d="M38 88H90" stroke="#ffffff" stroke-opacity=".55" stroke-width="10"/>
+    <path d="M41 63H87" stroke="#fbbf24" stroke-width="15"/>
+  </g>
+</svg>

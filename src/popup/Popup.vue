@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
+import logo from "../../brand/rung.svg?raw";
+import { BRAND } from "../brand";
 import { PRESETS, toSixDigitHex } from "../core/theme";
 import { backupToStorageItems, buildBackup, parseBackup } from "../storage/backup";
 import type { KeyValueStore } from "../storage/kv";
@@ -80,8 +82,11 @@ async function onFile(event: Event): Promise<void> {
 <template>
   <main class="popup" :class="{ tab: inTab }">
     <header class="head">
-      <span class="logo" :style="{ background: theme.bg, color: theme.text }">1</span>
-      <h1>SERP Counter + Notes</h1>
+      <span class="logo" role="img" :aria-label="BRAND.name" v-html="logo"></span>
+      <h1>
+        {{ BRAND.name }}
+        <small class="muted">{{ BRAND.tagline }}</small>
+      </h1>
       <span v-if="version" class="muted">v{{ version }}</span>
     </header>
 

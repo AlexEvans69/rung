@@ -50,6 +50,14 @@ test.describe("toolbar popup", () => {
     await expect(page.getByRole("switch", { name: "Numbering" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("switch", { name: "Notes" })).toHaveAttribute("aria-checked", "true");
     await expect(page.locator(".head")).toContainText("v9.9.9");
+    await expect(page.locator(".head h1")).toContainText("Rung");
+    await expect(page.locator(".head .logo svg")).toHaveCount(1);
+    // the logo is laid out inside the header (a dropped CSS rule once let it overlap the labels)
+    const logo = await page.locator(".head .logo svg").boundingBox();
+    expect(Math.round(logo!.width)).toBe(32);
+    expect(Math.round(logo!.height)).toBe(32);
+    const title = await page.locator(".head h1").boundingBox();
+    expect(logo!.x + logo!.width).toBeLessThanOrEqual(title!.x + 0.5);
   });
 
   test("toggling a switch is saved immediately", async ({ page }) => {
