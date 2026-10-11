@@ -3,7 +3,6 @@
   "version": "4.0.0",
   "description": "Numbers organic Google results and lets you attach notes to any URL or domain",
   "author": "Alexey Bogomolov",
-  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
