@@ -129,16 +129,16 @@ test.describe("badge colours", () => {
     await page.locator("serp-counter-host").nth(0).locator(".badge").click();
     const dialog = app(page).locator(".colors");
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: "Lime Glow" }).click();
+    await dialog.getByRole("button", { name: "Violet" }).click();
     await dialog.getByRole("button", { name: "Apply" }).click();
     await expect(dialog).toBeHidden();
     for (let i = 0; i < 3; i++) {
       const bg = await page.locator("serp-counter-host").nth(i).locator(".badge").evaluate((e) => getComputedStyle(e).backgroundColor);
-      expect(bg).toBe("rgb(29, 185, 84)");
+      expect(bg).toBe("rgb(124, 58, 237)");
     }
     expect(await page.evaluate(() => (window as never as { __mem: Record<string, unknown> }).__mem.theme)).toEqual({
-      bg: "#1db954",
-      text: "#fdfdf4",
+      bg: "#7c3aed",
+      text: "#ffffff",
     });
   });
 

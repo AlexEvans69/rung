@@ -125,7 +125,7 @@ describe("ColorPopover", () => {
   it("presets fill both colours and mark themselves selected", async () => {
     const wrapper = mount(ColorPopover, { props: { theme } });
     await wrapper.findAll(".preset")[1]!.trigger("click");
-    expect((inputs(wrapper)[0]!.element as HTMLInputElement).value).toBe("#1db954");
+    expect((inputs(wrapper)[0]!.element as HTMLInputElement).value).toBe("#7c3aed");
     expect(wrapper.findAll(".preset")[1]!.classes()).toContain("selected");
   });
 

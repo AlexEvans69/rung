@@ -71,9 +71,9 @@ test.describe("toolbar popup", () => {
 
   test("a preset changes the saved badge colour", async ({ page }) => {
     await openPopup(page);
-    await page.getByRole("button", { name: "Lime Glow" }).click();
-    expect((await mem(page)).theme).toEqual({ bg: "#1db954", text: "#fdfdf4" });
-    await expect(page.getByRole("button", { name: "Lime Glow" })).toHaveClass(/selected/);
+    await page.getByRole("button", { name: "Violet" }).click();
+    expect((await mem(page)).theme).toEqual({ bg: "#7c3aed", text: "#ffffff" });
+    await expect(page.getByRole("button", { name: "Violet" })).toHaveClass(/selected/);
   });
 
   test("imports a backup in a tab and rejects garbage", async ({ page }) => {

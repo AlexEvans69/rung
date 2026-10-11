@@ -84,9 +84,16 @@ function onKeydown(event: KeyboardEvent): void {
       </button>
     </header>
 
-    <div class="preview" aria-hidden="true">
-      <span class="badge-sample" :style="{ background: previewBg, color: previewText }">12</span>
-      <span class="chip-sample" :style="{ background: previewBg, color: previewText }">Note</span>
+    <div class="mini" aria-hidden="true">
+      <span class="mini-badge" :style="{ background: previewBg, color: previewText }">12</span>
+      <div class="mini-body">
+        <div class="mini-site"><span class="mini-fav"></span>example.com</div>
+        <div class="mini-title">iPhone deals 2026</div>
+        <div class="mini-lines"><i></i><i></i></div>
+      </div>
+      <span class="mini-note" :style="{ background: previewBg, color: previewText }">
+        <Icon name="note" :size="12" />Note
+      </span>
     </div>
 
     <div class="presets" role="group" aria-label="Presets">

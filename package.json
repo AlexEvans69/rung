@@ -1,6 +1,6 @@
 {
   "name": "serp-counter-tool",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "Numbers organic Google results and lets you attach notes to any URL or domain",
   "author": "Alexey Bogomolov",
   "private": true,
