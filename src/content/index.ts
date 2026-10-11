@@ -4,6 +4,7 @@ import { ChromeStorageStore, isExtensionContextValid } from "../storage/kv";
 import { PageCounts } from "../storage/counts";
 import { migrateLegacyNotes } from "../storage/migration";
 import { NotesRepository } from "../storage/notes";
+import { SettingsRepository } from "../storage/settings";
 import App from "../ui/App.vue";
 import { createAppMount } from "../ui/shadow";
 import { createUiState } from "../ui/state";
@@ -21,14 +22,26 @@ async function main(): Promise<void> {
 
   const notes = new NotesRepository(store);
   const counts = new PageCounts(store);
-  await Promise.all([notes.init(), counts.init()]);
+  const settings = new SettingsRepository(store);
+  await Promise.all([notes.init(), counts.init(), settings.init()]);
 
-  const ui = createUiState(notes);
+  const ui = createUiState(notes, settings);
   const { host, mount } = createAppMount(document);
   document.body.appendChild(host);
   createApp(App, { state: ui }).mount(mount);
 
-  new SerpController({ doc: document, location, counts, ui }).start();
+  const controller = new SerpController({ doc: document, location, counts, ui });
+
+  // With both features off there is nothing to show, so stop watching the page altogether.
+  let running = false;
+  const apply = ({ numbering, notes: notesOn }: { numbering: boolean; notes: boolean }) => {
+    const wanted = numbering || notesOn;
+    if (wanted && !running) controller.start();
+    else if (!wanted && running) controller.stop();
+    running = wanted;
+  };
+  apply(settings.get());
+  settings.subscribe(apply);
   debug("started");
 }
 

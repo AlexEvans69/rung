@@ -79,12 +79,13 @@ h3{margin:0;font-size:20px;line-height:26px;font-weight:400;color:${dark ? "#8ab
 </style>
 <script>
 (function(){
-  var mem={};var cp=function(o){return JSON.parse(JSON.stringify(o))};
-  window.chrome={runtime:{id:'e2e'},storage:{local:{
+  var mem={};var listeners=[];var cp=function(o){return JSON.parse(JSON.stringify(o))};
+  var emit=function(ch){listeners.slice().forEach(function(f){f(ch,'local')})};
+  window.chrome={runtime:{id:'e2e',getManifest:function(){return {version:'0.0.0'}},getURL:function(p){return p}},storage:{local:{
     get:async function(){return cp(mem)},
-    set:async function(o){Object.assign(mem,cp(o))},
-    remove:async function(k){(Array.isArray(k)?k:[k]).forEach(function(x){delete mem[x]})}},
-    onChanged:{addListener:function(){},removeListener:function(){}}}};
+    set:async function(o){var ch={};Object.keys(o).forEach(function(k){mem[k]=cp(o[k]);ch[k]={newValue:cp(o[k])}});emit(ch)},
+    remove:async function(k){var ch={};(Array.isArray(k)?k:[k]).forEach(function(x){delete mem[x];ch[x]={}});emit(ch)}},
+    onChanged:{addListener:function(f){listeners.push(f)},removeListener:function(f){listeners=listeners.filter(function(x){return x!==f})}}}};
   window.__mem=mem;
 })();
 </script></head><body>

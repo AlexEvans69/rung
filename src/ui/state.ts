@@ -3,6 +3,7 @@ import type { EntryGeometry, Rail } from "../core/layout";
 import { DEFAULT_THEME } from "../core/theme";
 import type { BadgeTheme, EffectiveNote, NoteScope } from "../core/types";
 import type { NotesRepository } from "../storage/notes";
+import { DEFAULT_SETTINGS, type Settings, type SettingsRepository } from "../storage/settings";
 
 /** One numbered result and the element its controls are mounted into. */
 export interface ResultEntry {
@@ -35,6 +36,7 @@ export interface UiState {
   /** Shared by all results so the note column is a straight line. */
   rail: Ref<Rail>;
   theme: Ref<BadgeTheme>;
+  settings: Ref<Settings>;
   panel: Ref<PanelRequest | null>;
   colorPickerOpen: Ref<boolean>;
   effectiveNote(entry: ResultEntry): EffectiveNote;
@@ -48,10 +50,11 @@ export interface UiState {
 }
 
 /** Reactive bridge between the repositories/controller and the Vue components. */
-export function createUiState(notes: NotesRepository): UiState {
+export function createUiState(notes: NotesRepository, settingsRepo?: SettingsRepository): UiState {
   const entries = shallowRef<ResultEntry[]>([]);
   const rail = ref<Rail>({ mode: "card", width: 200, x: 0, badgeRight: 0 });
   const theme = ref<BadgeTheme>({ ...DEFAULT_THEME });
+  const settings = ref<Settings>(settingsRepo?.get() ?? { ...DEFAULT_SETTINGS });
   const panel = ref<PanelRequest | null>(null);
   const colorPickerOpen = ref(false);
   /** Bumped whenever a note changes so components re-read `effectiveNote`. */
@@ -63,12 +66,19 @@ export function createUiState(notes: NotesRepository): UiState {
     theme.value = notes.getTheme();
   });
 
+  settingsRepo?.subscribe((next) => {
+    settings.value = next;
+    // A note editor must not stay open once notes are switched off.
+    if (!next.notes) panel.value = null;
+  });
+
   const keyFor = (entry: ResultEntry, scope: NoteScope) => (scope === "site" ? entry.host : entry.urlKey);
 
   return {
     entries,
     rail,
     theme,
+    settings,
     panel,
     colorPickerOpen,
     effectiveNote(entry) {

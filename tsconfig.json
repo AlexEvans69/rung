@@ -15,5 +15,5 @@
     "types": ["vite/client", "chrome", "node"],
     "noEmit": true
   },
-  "include": ["src", "tests", "e2e", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "tests", "e2e", "vite.config.ts", "vite.popup.config.ts", "playwright.config.ts"]
 }

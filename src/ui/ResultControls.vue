@@ -62,6 +62,7 @@ onMounted(() => nextTick(measure));
 <template>
   <div v-if="geo" :style="vars">
     <button
+      v-if="state.settings.value.numbering"
       type="button"
       class="badge"
       :style="{ left: `${geo.badgeX}px`, top: `${geo.titleY}px` }"
@@ -73,6 +74,7 @@ onMounted(() => nextTick(measure));
     </button>
 
     <div
+      v-if="state.settings.value.notes"
       class="rail"
       :class="`mode-${rail.mode}`"
       :style="{ left: `${geo.railX}px`, top: `${geo.titleY}px`, width: `${rail.width}px` }"

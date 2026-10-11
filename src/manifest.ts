@@ -22,7 +22,11 @@ export function createManifest(version: string) {
         run_at: "document_idle",
       },
     ],
-    action: { default_icon: { "128": "icons/icon128.png" } },
+    action: {
+      default_title: "SERP Counter + Notes",
+      default_popup: "popup.html",
+      default_icon: { "128": "icons/icon128.png" },
+    },
     icons: { "128": "icons/icon128.png" },
   };
 }

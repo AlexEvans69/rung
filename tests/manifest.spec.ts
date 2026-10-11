@@ -30,6 +30,10 @@ describe("manifest", () => {
     expect(new Set(GOOGLE_DOMAINS).size).toBe(GOOGLE_DOMAINS.length);
   });
 
+  it("declares the toolbar popup", () => {
+    expect(manifest.action.default_popup).toBe("popup.html");
+  });
+
   it("references the built script and icon", () => {
     expect(script.js).toEqual(["contentScript.js"]);
     expect(manifest.icons["128"]).toBe("icons/icon128.png");

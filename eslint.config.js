@@ -12,6 +12,7 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
+    languageOptions: { globals: { chrome: "readonly" } },
     rules: {
       "vue/multi-word-component-names": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],

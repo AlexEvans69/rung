@@ -1,0 +1,168 @@
+:root {
+  --bg: #ffffff;
+  --fg: #202124;
+  --muted: #5f6368;
+  --line: rgba(0, 0, 0, 0.12);
+  --accent: #667eea;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1c20;
+    --fg: #f1f3f4;
+    --muted: #9aa0a6;
+    --line: rgba(255, 255, 255, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.popup {
+  width: 320px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup.tab {
+  margin: 48px auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.head,
+.row,
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 12px system-ui, sans-serif;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.switch i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s ease;
+}
+
+.switch.on {
+  background: var(--accent);
+}
+
+.switch.on i {
+  left: 18px;
+}
+
+.switch:focus-visible,
+.preset:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.presets {
+  display: flex;
+  gap: 8px;
+}
+
+.preset {
+  width: 36px;
+  height: 36px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: 600 13px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.preset.selected {
+  border-color: var(--fg);
+}
+
+.foot {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.link {
+  border: none;
+  background: none;
+  color: var(--fg);
+  font: 500 12px system-ui, sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.status {
+  min-height: 1em;
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}

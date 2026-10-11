@@ -47,6 +47,11 @@ export class NotesRepository {
     return () => this.listeners.delete(listener);
   }
 
+  /** Number of saved notes (per-URL and per-site). */
+  count(): number {
+    return this.notes.url.size + this.notes.site.size;
+  }
+
   getTheme(): BadgeTheme {
     return { ...this.theme };
   }
