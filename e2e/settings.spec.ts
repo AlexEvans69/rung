@@ -21,7 +21,7 @@ const counts = (page: Page) =>
     return {
       hosts: hosts.length,
       badges: hosts.filter((h) => h.shadowRoot?.querySelector(".badge")).length,
-      notes: hosts.filter((h) => h.shadowRoot?.querySelector(".note-btn")).length,
+      notes: hosts.filter((h) => h.shadowRoot?.querySelector(".rail")).length,
     };
   });
 
@@ -63,7 +63,7 @@ test.describe("toolbar settings apply live", () => {
   test("an open note editor closes when notes are switched off", async ({ page }) => {
     await open(page);
     await page.evaluate(() => {
-      document.querySelector("serp-counter-host")?.shadowRoot?.querySelector<HTMLElement>(".note-btn")?.click();
+      document.querySelector("serp-counter-host")?.shadowRoot?.querySelector<HTMLElement>(".chip")?.click();
     });
     await page.waitForTimeout(100);
     const editor = () => page.evaluate(() => !!document.getElementById("serp-counter-app")?.shadowRoot?.querySelector("textarea"));

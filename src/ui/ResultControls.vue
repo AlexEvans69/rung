@@ -1,66 +1,84 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import Icon from "./Icon.vue";
 import type { ResultEntry, UiState } from "./state";
 
 const props = defineProps<{ entry: ResultEntry; state: UiState }>();
 
-const LINE_HEIGHT = 13 * 1.35;
-const PADDING = 16;
+const LINE_HEIGHT = 12.5 * 1.45;
+const PADDING = 8;
 const MIN_LINES = 2;
 const MAX_LINES = 8;
 
 const note = computed(() => props.state.effectiveNote(props.entry));
 const geo = computed(() => props.entry.geo);
 const rail = props.state.rail;
+const theme = props.state.theme;
+
 const vars = computed(() => ({
-  "--serp-bg": props.state.theme.value.bg,
-  "--serp-fg": props.state.theme.value.text,
+  "--accent": theme.value.bg,
+  "--on-accent": theme.value.text,
 }));
 
-const noteButton = ref<HTMLButtonElement | null>(null);
-const previewEl = ref<HTMLElement | null>(null);
+const cardEl = ref<HTMLElement | null>(null);
 const expanded = ref(false);
 const overflowing = ref(false);
 
-const showCard = computed(() => rail.value.mode === "card" && !!note.value.text);
+const hasNote = computed(() => !!note.value.text);
+const showCard = computed(() => rail.value.mode === "card" && hasNote.value);
 const iconOnly = computed(() => rail.value.mode === "icon" || rail.value.mode === "inset");
+const scopeLabel = computed(() => (note.value.scope === "site" ? "Site" : "Page"));
 
 /**
- * The collapsed card shows whole lines only and never reaches below its own result, so it
- * can't cover the next one.
+ * The collapsed card shows whole lines only and stops above the next result's Note control.
+ * Total height = header (26) + body + "Show more" row (27) + borders (2).
  */
-const limit = computed(() => {
-  const room = (geo.value?.roomY ?? 200) - 26 - 6 - 24;
+const bodyLimit = computed(() => {
+  const room = (geo.value?.roomY ?? 240) - 26 - 27 - 2;
   const lines = Math.floor((room - PADDING) / LINE_HEIGHT);
   const clamped = Math.max(MIN_LINES, Math.min(MAX_LINES, lines));
   return Math.round(clamped * LINE_HEIGHT + PADDING);
 });
-const bodyStyle = computed(() => ({ maxHeight: expanded.value ? "none" : `${limit.value}px` }));
+const bodyStyle = computed(() => ({ maxHeight: expanded.value ? "none" : `${bodyLimit.value}px` }));
 
-function openPanel(): void {
-  const rect = (noteButton.value ?? previewEl.value)?.getBoundingClientRect();
-  props.state.openNote(props.entry, {
-    left: rect?.left ?? 0,
-    top: rect?.top ?? 0,
-    bottom: rect?.bottom ?? 0,
-  });
+function anchorOf(el: HTMLElement | null) {
+  const rect = el?.getBoundingClientRect();
+  return { left: rect?.left ?? 0, top: rect?.top ?? 0, bottom: rect?.bottom ?? 0, opener: el };
+}
+
+/** The editor opens under whatever was clicked (the chip, or the card's header row). */
+function openEditor(event: MouseEvent): void {
+  props.state.openNote(props.entry, anchorOf(event.currentTarget as HTMLElement));
+}
+
+function openColors(event: MouseEvent): void {
+  props.state.openColorPicker(anchorOf(event.currentTarget as HTMLElement));
 }
 
 function measure(): void {
-  const textEl = previewEl.value?.querySelector(".note-preview-text");
-  overflowing.value = (textEl?.scrollHeight ?? 0) > limit.value + 1;
+  const body = cardEl.value?.querySelector(".card-text");
+  overflowing.value = (body?.scrollHeight ?? 0) > bodyLimit.value + 1;
   if (!overflowing.value) expanded.value = false;
 }
 
+/** An expanded card floats above the next results' controls (their hosts come later in the DOM). */
+function raiseHost(raised: boolean): void {
+  const root = props.entry.mount.getRootNode() as ShadowRoot | HTMLElement;
+  const host = (root as ShadowRoot).host as HTMLElement | undefined;
+  if (host) host.style.zIndex = raised ? "5" : "2";
+}
+
 watch(
-  () => [note.value.text, limit.value, rail.value.width],
+  () => [note.value.text, bodyLimit.value, rail.value.width],
   () => nextTick(measure),
 );
+watch(expanded, raiseHost);
 onMounted(() => nextTick(measure));
+onBeforeUnmount(() => raiseHost(false));
 </script>
 
 <template>
-  <div v-if="geo" :style="vars">
+  <div v-if="geo" class="ui" :data-theme="state.pageTheme.value" :style="vars">
     <button
       v-if="state.settings.value.numbering"
       type="button"
@@ -68,7 +86,7 @@ onMounted(() => nextTick(measure));
       :style="{ left: `${geo.badgeX}px`, top: `${geo.titleY}px` }"
       :title="`Result #${entry.index} — click to change colours`"
       :aria-label="`Result number ${entry.index}. Change badge colours`"
-      @click="state.openColorPicker()"
+      @click="openColors"
     >
       {{ entry.index }}
     </button>
@@ -79,59 +97,32 @@ onMounted(() => nextTick(measure));
       :class="`mode-${rail.mode}`"
       :style="{ left: `${geo.railX}px`, top: `${geo.titleY}px`, width: `${rail.width}px` }"
     >
+      <div v-if="showCard" ref="cardEl" class="card" :class="{ open: expanded }">
+        <button type="button" class="card-head" :aria-label="`Edit ${scopeLabel.toLowerCase()} note`" @click="openEditor">
+          <span class="tag">{{ scopeLabel }}</span>
+          <Icon name="pencil" :size="14" />
+        </button>
+        <div class="card-body" :class="{ fade: overflowing && !expanded }" :style="bodyStyle">
+          <div class="card-text">{{ note.text }}</div>
+        </div>
+        <button v-if="overflowing || expanded" type="button" class="card-more" @click="expanded = !expanded">
+          <Icon name="chevronDown" :size="12" :class="{ flip: expanded }" />
+          {{ expanded ? "Show less" : "Show more" }}
+        </button>
+      </div>
+
       <button
-        ref="noteButton"
+        v-else
         type="button"
-        class="note-btn"
-        :class="{ icon: iconOnly, filled: iconOnly && !!note.text }"
+        class="chip"
+        :class="{ icon: iconOnly, filled: hasNote }"
         :title="note.text || 'Add a note'"
         aria-label="Note"
-        @click="openPanel"
+        @click="openEditor"
       >
-        <svg
-          v-if="iconOnly"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-          <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
-          <path d="M9 13h6M9 17h6" />
-        </svg>
-        <template v-else>Note</template>
+        <Icon :name="iconOnly ? 'note' : hasNote ? 'note' : 'plus'" :size="iconOnly ? 16 : 13" />
+        <template v-if="!iconOnly">Note</template>
       </button>
-
-      <div v-if="showCard" ref="previewEl" class="note-preview" @click="openPanel">
-        <div class="note-preview-inner" :style="bodyStyle">
-          <div class="note-preview-text">{{ note.text }}</div>
-        </div>
-        <div v-if="overflowing || expanded" class="note-preview-footer">
-          <button type="button" class="note-toggle" @click.stop="expanded = !expanded">
-            <svg
-              class="chevron"
-              :class="{ up: expanded }"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-            <span>{{ expanded ? "Show less" : "Show more" }}</span>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>

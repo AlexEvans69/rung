@@ -14,6 +14,11 @@ export interface Measurement {
 
 const CLIPPING = new Set(["hidden", "clip", "scroll", "auto"]);
 
+/** Clear space kept between a note card and the next result's Note control. */
+const NEXT_ROW_GAP = 8;
+/** The last card may extend this far below its result, into the space before the footer. */
+const LAST_RESULT_EXTRA = 120;
+
 const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
 
 /** Right-most x the note rail may use before something clips it or is in its way. */
@@ -57,20 +62,30 @@ export function measureLayout(doc: Document, items: readonly Measurable[]): Meas
   const rail = computeRail(boxes, rightLimit(doc, first.element, columnRight));
   if (!rail) return null;
 
-  const geometry = new Map<number, EntryGeometry>();
-  for (const item of items) {
-    const host = item.host.getBoundingClientRect();
+  // First-line centre of every title, in document order.
+  const centers = items.map((item) => {
     const title = item.titleElement.getBoundingClientRect();
-    const element = item.element.getBoundingClientRect();
     const lineHeight = view ? Number.parseFloat(view.getComputedStyle(item.titleElement).lineHeight) : Number.NaN;
-    const center = firstLineCenter(title.top, title.height, Number.isFinite(lineHeight) ? lineHeight : null);
+    return firstLineCenter(title.top, title.height, Number.isFinite(lineHeight) ? lineHeight : null);
+  });
+
+  const geometry = new Map<number, EntryGeometry>();
+  items.forEach((item, i) => {
+    const host = item.host.getBoundingClientRect();
+    const center = centers[i] as number;
+    const next = centers[i + 1];
+
+    // Room for a note card: down to the next result's title row, where its Note control sits.
+    // For the last result (or an unexpected order) fall back to the room inside the result.
+    const element = item.element.getBoundingClientRect();
+    const room = next !== undefined && next > center ? next - center - NEXT_ROW_GAP : element.bottom - center + LAST_RESULT_EXTRA;
 
     geometry.set(item.id, {
       titleY: center - host.top,
       badgeX: rail.badgeRight - host.left,
       railX: rail.x - host.left,
-      roomY: Math.max(0, element.bottom - center),
+      roomY: Math.max(0, room),
     });
-  }
+  });
   return { rail, geometry };
 }

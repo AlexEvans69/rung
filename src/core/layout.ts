@@ -77,7 +77,7 @@ export interface EntryGeometry {
   badgeX: number;
   /** x of the note rail's left edge, relative to the host. */
   railX: number;
-  /** Vertical room below the title row inside the result, for the collapsed note card. */
+  /** Vertical room from the title row down to the next result's Note control, for the card. */
   roomY: number;
 }
 

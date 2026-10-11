@@ -1,5 +1,6 @@
 import { ref, shallowRef, type Ref, type ShallowRef } from "vue";
 import type { EntryGeometry, Rail } from "../core/layout";
+import type { PageTheme } from "../core/pageTheme";
 import { DEFAULT_THEME } from "../core/theme";
 import type { BadgeTheme, EffectiveNote, NoteScope } from "../core/types";
 import type { NotesRepository } from "../storage/notes";
@@ -22,13 +23,17 @@ export interface AnchorRect {
   left: number;
   top: number;
   bottom: number;
+  /** The control that opened the popover; focus returns to it on close. */
+  opener?: HTMLElement | null;
 }
 
 export interface PanelRequest {
   entry: ResultEntry;
   anchor: AnchorRect;
+  /** Scope selected when the editor opens: the scope of the visible note, else "url". */
   scope: NoteScope;
-  text: string;
+  /** Saved text per scope, so switching scope shows what is stored there. */
+  texts: Record<NoteScope, string>;
 }
 
 export interface UiState {
@@ -38,13 +43,14 @@ export interface UiState {
   theme: Ref<BadgeTheme>;
   settings: Ref<Settings>;
   panel: Ref<PanelRequest | null>;
-  colorPickerOpen: Ref<boolean>;
+  colorPicker: Ref<{ anchor: AnchorRect } | null>;
+  pageTheme: Ref<PageTheme>;
   effectiveNote(entry: ResultEntry): EffectiveNote;
   openNote(entry: ResultEntry, anchor: AnchorRect): void;
   closePanel(): void;
   saveNote(scope: NoteScope, text: string): Promise<void>;
   deleteNote(scope: NoteScope): Promise<void>;
-  openColorPicker(): void;
+  openColorPicker(anchor: AnchorRect): void;
   closeColorPicker(): void;
   applyTheme(theme: BadgeTheme): Promise<void>;
 }
@@ -56,7 +62,8 @@ export function createUiState(notes: NotesRepository, settingsRepo?: SettingsRep
   const theme = ref<BadgeTheme>({ ...DEFAULT_THEME });
   const settings = ref<Settings>(settingsRepo?.get() ?? { ...DEFAULT_SETTINGS });
   const panel = ref<PanelRequest | null>(null);
-  const colorPickerOpen = ref(false);
+  const colorPicker = ref<{ anchor: AnchorRect } | null>(null);
+  const pageTheme = ref<PageTheme>("light");
   /** Bumped whenever a note changes so components re-read `effectiveNote`. */
   const notesVersion = ref(0);
 
@@ -80,14 +87,20 @@ export function createUiState(notes: NotesRepository, settingsRepo?: SettingsRep
     theme,
     settings,
     panel,
-    colorPickerOpen,
+    colorPicker,
+    pageTheme,
     effectiveNote(entry) {
       void notesVersion.value;
       return notes.getEffective(entry.urlKey, entry.host);
     },
     openNote(entry, anchor) {
-      const { text, scope } = notes.getEffective(entry.urlKey, entry.host);
-      panel.value = { entry, anchor, scope, text };
+      const { scope } = notes.getEffective(entry.urlKey, entry.host);
+      panel.value = {
+        entry,
+        anchor,
+        scope,
+        texts: { url: notes.get("url", entry.urlKey), site: notes.get("site", entry.host) },
+      };
     },
     closePanel() {
       panel.value = null;
@@ -102,14 +115,14 @@ export function createUiState(notes: NotesRepository, settingsRepo?: SettingsRep
       panel.value = null;
       if (current) await notes.delete(scope, keyFor(current.entry, scope));
     },
-    openColorPicker() {
-      colorPickerOpen.value = true;
+    openColorPicker(anchor) {
+      colorPicker.value = { anchor };
     },
     closeColorPicker() {
-      colorPickerOpen.value = false;
+      colorPicker.value = null;
     },
     async applyTheme(next) {
-      colorPickerOpen.value = false;
+      colorPicker.value = null;
       await notes.saveTheme(next);
     },
   };

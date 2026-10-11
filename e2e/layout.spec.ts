@@ -55,7 +55,7 @@ function snapshot(page: Page): Promise<Snapshot> {
       return b ? [{ ...rect(b), text: b.textContent?.trim() ?? "" }] : [];
     });
     const notes = hosts.flatMap((h) => {
-      const b = h.shadowRoot?.querySelector(".note-btn");
+      const b = h.shadowRoot?.querySelector(".rail .chip, .rail .card-head");
       return b ? [rect(b)] : [];
     });
     const titles = [...document.querySelectorAll("h3")]
