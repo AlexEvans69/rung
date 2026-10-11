@@ -1,0 +1,364 @@
+/* Lives inside shadow roots only; nothing here can affect (or be affected by) Google's CSS. */
+
+:host {
+  font: 600 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---- per-result controls ---- */
+
+.badge {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(calc(-100% - 12px), -50%);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 12px;
+  background: var(--serp-bg);
+  color: var(--serp-fg);
+  font: 700 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.badge:hover {
+  transform: translate(calc(-100% - 12px), -50%) scale(1.05);
+}
+
+.note-widget {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(calc(100% + 10px), -50px);
+  z-index: 100;
+  transform-origin: top center;
+}
+
+.note-wrap {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  isolation: isolate;
+}
+
+.note-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: var(--serp-bg);
+  color: var(--serp-fg);
+  font: 600 12px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.note-btn:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.note-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 8px;
+  background: var(--serp-bg);
+  color: var(--serp-fg);
+  font: 600 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.note-preview-inner {
+  width: 100%;
+  overflow: hidden;
+  transition: max-height 0.24s ease;
+}
+
+.note-preview-text {
+  width: 100%;
+  padding: 8px;
+  white-space: pre-wrap;
+}
+
+.note-preview-footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 24px;
+  margin-top: 4px;
+}
+
+.note-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.note-toggle:hover,
+.note-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+}
+
+.chevron.up {
+  transform: rotate(180deg);
+}
+
+/* ---- note panel & colour picker ---- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+}
+
+.overlay.dim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 18, 0.55);
+}
+
+.panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 420px;
+  min-width: 320px;
+  max-width: 92vw;
+  min-height: 260px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: #0b0d14;
+  color: #f6f8ff;
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+.panel.modal {
+  position: relative;
+  width: 520px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scope-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.scope-btn {
+  min-width: 130px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.scope-btn.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.35);
+}
+
+.icon-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f8ff;
+  font-size: 18px;
+}
+
+.icon-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.note-text {
+  width: 100%;
+  min-height: 140px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f6f8ff;
+  font: 400 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.action {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action.primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.35);
+}
+
+.action.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(99, 102, 241, 0.4);
+}
+
+.action.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6f8ff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.action.danger {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.4);
+}
+
+.hint {
+  margin: 0;
+  color: rgba(246, 248, 255, 0.55);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.picker-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field-row {
+  display: flex;
+  gap: 8px;
+}
+
+.color-input {
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+}
+
+.color-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f6f8ff;
+  font: 500 13px/1 ui-monospace, Menlo, Consolas, monospace;
+}
+
+.color-text.invalid {
+  border-color: #f87171;
+}
+
+.preview-chip {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f6f8ff;
+  font-size: 12px;
+  text-align: left;
+}
+
+.preset:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.swatch {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
