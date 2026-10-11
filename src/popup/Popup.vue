@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
-import logo from "../../brand/rung.svg?raw";
+import logo from "../../brand/rung-mark-indigo.svg?raw";
 import { BRAND } from "../brand";
 import { PRESETS, toSixDigitHex } from "../core/theme";
 import { backupToStorageItems, buildBackup, parseBackup } from "../storage/backup";

@@ -6,6 +6,6 @@ export const BRAND = {
   storeTitle: "Rung: SERP counter and notes",
   /** Store summary (`description` in the manifest); max 132 characters. */
   description:
-    "Numbers organic results on Google Search and lets you pin notes to any page or whole site. Free, private, no account.",
-  color: "#5b5fe0",
+    "Numbers every organic result on Google Search and pins your notes to any page or whole site. Free, private, no account.",
+  color: "#4f46e5",
 } as const;

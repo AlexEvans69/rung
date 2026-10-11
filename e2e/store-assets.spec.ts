@@ -16,7 +16,7 @@ const ROOT = process.cwd();
 const OUT = resolve(ROOT, "store");
 const DIST = resolve(ROOT, "dist");
 const BUNDLE = readFileSync(join(DIST, "contentScript.js"), "utf8");
-const LOGO = readFileSync(resolve(ROOT, "brand/rung.svg"), "utf8");
+const LOCKUP = readFileSync(resolve(ROOT, "brand/rung-lockup-on-dark.svg"), "utf8").replace(/ width="[\d.]+" height="[\d.]+"/, "");
 mkdirSync(OUT, { recursive: true });
 
 const RESULTS: ResultSpec[] = [
@@ -108,14 +108,13 @@ function promoHtml(width: number, height: number, withShot: boolean): string {
   const big = width > 1000;
   return `<!doctype html><meta charset="utf-8"><style>
 *{box-sizing:border-box}
-body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#17183f;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:space-between;gap:${big ? 56 : 22}px;padding:${big ? "0 72px" : "0 28px"}}
-.l{flex:none}
-.logo svg{width:${big ? 124 : 72}px;height:${big ? 124 : 72}px;display:block}
-h1{margin:${big ? "26px 0 10px" : "14px 0 4px"};font-size:${big ? 76 : 42}px;letter-spacing:-.02em;line-height:1}
-p{margin:0;font-size:${big ? 27 : 15}px;color:#c9caf5;line-height:1.35;max-width:${big ? 440 : 200}px}
+body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#12163b;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:${withShot ? "space-between" : "center"};gap:${big ? 56 : 22}px;padding:${big ? "0 72px" : "0 28px"}}
+.l{flex:none;display:flex;flex-direction:column;gap:${big ? 28 : 16}px}
+.lockup svg{width:${big ? 460 : 300}px;height:auto;display:block}
+p{margin:0;font-size:${big ? 27 : 16}px;color:#c9caf5;line-height:1.4;max-width:${big ? 460 : 330}px}
 .s{flex:none;width:${big ? 700 : 0}px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 24px 56px rgba(0,0,0,.45);display:${withShot ? "block" : "none"}}
 .s img{width:100%;display:block}
-</style><div class="l"><div class="logo">${LOGO}</div><h1>Rung</h1><p>Number every result. Pin notes where you search.</p></div>
+</style><div class="l"><div class="lockup">${LOCKUP}</div><p>Number every result. Pin notes where you search.</p></div>
 <div class="s">${withShot ? `<img src="${shotData}">` : ""}</div>`;
 }
 
