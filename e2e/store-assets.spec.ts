@@ -127,29 +127,45 @@ test("5 toolbar popup", async ({ page }) => {
   await shot(page, "screenshot-5-toolbar.png");
 });
 
+/** A real screenshot (store/real/, not committed) wins over the generated fixture one. */
+const REAL_SHOT = join(OUT, "real", "screenshot-1-results.png");
+
 function promoHtml(width: number, height: number, withShot: boolean): string {
-  const shotData = withShot
-    ? `data:image/png;base64,${readFileSync(join(OUT, "screenshot-1-results.png")).toString("base64")}`
-    : "";
+  const shotFile = existsSync(REAL_SHOT) ? REAL_SHOT : join(OUT, "screenshot-1-results.png");
+  const shotData = withShot ? `data:image/png;base64,${readFileSync(shotFile).toString("base64")}` : "";
   const big = width > 1000;
   return `<!doctype html><meta charset="utf-8"><style>
 *{box-sizing:border-box}
 body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#12163b;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:${withShot ? "space-between" : "center"};gap:${big ? 56 : 22}px;padding:${big ? "0 72px" : "0 28px"}}
-.l{flex:none;display:flex;flex-direction:column;gap:${big ? 28 : 16}px}
-.lockup svg{width:${big ? 460 : 300}px;height:auto;display:block}
-p{margin:0;font-size:${big ? 27 : 16}px;color:#c9caf5;line-height:1.4;max-width:${big ? 460 : 330}px}
-.s{flex:none;width:${big ? 700 : 0}px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 24px 56px rgba(0,0,0,.45);display:${withShot ? "block" : "none"}}
+.l{flex:none;display:flex;flex-direction:column;gap:${big ? 26 : 16}px}
+.lockup svg{width:${big ? 470 : 300}px;height:auto;display:block}
+/* the tagline is sized to span exactly from the icon's left edge to the end of the "g" */
+#tg{margin:0;display:inline-block;white-space:nowrap;font-weight:500;color:#c9caf5;line-height:1;align-self:flex-start}
+.s{flex:none;width:${big ? 700 : 0}px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 56px rgba(0,0,0,.5);display:${withShot ? "block" : "none"}}
 .s img{width:100%;display:block}
-</style><div class="l"><div class="lockup">${LOCKUP}</div><p>Counts SERP for you.</p></div>
-<div class="s">${withShot ? `<img src="${shotData}">` : ""}</div>`;
+</style><div class="l"><div class="lockup">${LOCKUP}</div><p id="tg">Counts SERP for you.</p></div>
+<div class="s">${withShot ? `<img src="${shotData}">` : ""}</div>
+`;
+}
+
+/** Sizes the tagline so it spans exactly from the icon's left edge to the end of the "g". */
+async function fitTagline(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const target = document.querySelector(".lockup svg")!.getBoundingClientRect().width;
+    const tagline = document.getElementById("tg")!;
+    tagline.style.fontSize = "100px";
+    tagline.style.fontSize = `${(100 * target) / tagline.getBoundingClientRect().width}px`;
+  });
 }
 
 test("6 promo tiles", async ({ page }) => {
   await page.setViewportSize({ width: 440, height: 280 });
   await page.setContent(promoHtml(440, 280, false));
+  await fitTagline(page);
   await page.screenshot({ path: join(OUT, "promo-small-440x280.png") });
 
   await page.setViewportSize({ width: 1400, height: 560 });
   await page.setContent(promoHtml(1400, 560, true));
+  await fitTagline(page);
   await page.screenshot({ path: join(OUT, "promo-marquee-1400x560.png") });
 });
