@@ -1,9 +1,11 @@
 import { reactive } from "vue";
 import { debug } from "../core/log";
 import { computeBase, getPageContext } from "../core/numbering";
-import { findOrganicResults, snippetHeight } from "../core/parser";
+import { sameGeometry } from "../core/layout";
+import { findOrganicResults } from "../core/parser";
 import type { PageCounts } from "../storage/counts";
 import { RESULT_HOST_TAG, createResultMount } from "../ui/shadow";
+import { measureLayout } from "./measure";
 import type { ResultEntry, UiState } from "../ui/state";
 
 const SCAN_DEBOUNCE_MS = 80;
@@ -11,6 +13,8 @@ const SCAN_DEBOUNCE_MS = 80;
 interface Tracked {
   entry: ResultEntry;
   host: HTMLElement;
+  element: HTMLElement;
+  titleElement: HTMLElement;
 }
 
 export interface ControllerDeps {
@@ -32,6 +36,8 @@ export class SerpController {
   private nextId = 1;
   private observer: MutationObserver | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private resizeObserver: ResizeObserver | null = null;
+  private layoutFrame: number | null = null;
 
   constructor(private readonly deps: ControllerDeps) {}
 
@@ -45,11 +51,62 @@ export class SerpController {
       this.scheduleScan();
     });
     this.observer.observe(this.deps.doc.body, { childList: true, subtree: true });
+
+    // Result boxes change when images, fonts or Google's own scripts finish; the window
+    // changes with resizes and zoom. Either way the rails have to be re-measured.
+    const view = this.deps.doc.defaultView;
+    if (view && typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(() => this.scheduleLayout());
+      this.resizeObserver.observe(this.deps.doc.documentElement);
+    }
+    view?.addEventListener("resize", this.onResize);
+    view?.addEventListener("load", this.onResize);
+    this.deps.doc.fonts?.ready.then(() => this.scheduleLayout()).catch(() => undefined);
+  }
+
+  private onResize = (): void => this.scheduleLayout();
+
+  /** Coalesces layout requests into one measurement per frame. */
+  scheduleLayout(): void {
+    const view = this.deps.doc.defaultView;
+    if (!view || this.layoutFrame !== null) return;
+    this.layoutFrame = view.requestAnimationFrame(() => {
+      this.layoutFrame = null;
+      this.layout();
+    });
+  }
+
+  /** Measures the page and updates where every entry's controls sit. */
+  layout(): void {
+    const items = [...this.tracked.values()].map(({ entry, host, element, titleElement }) => ({
+      id: entry.id,
+      host,
+      element,
+      titleElement,
+    }));
+    const measurement = measureLayout(this.deps.doc, items);
+    if (!measurement) return;
+
+    const { rail } = this.deps.ui;
+    const r = measurement.rail;
+    if (rail.value.mode !== r.mode || rail.value.width !== r.width) rail.value = r;
+
+    for (const { entry } of this.tracked.values()) {
+      const geo = measurement.geometry.get(entry.id);
+      if (geo && !sameGeometry(entry.geo, geo)) entry.geo = geo;
+    }
   }
 
   stop(): void {
     this.observer?.disconnect();
     this.observer = null;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    const view = this.deps.doc.defaultView;
+    view?.removeEventListener("resize", this.onResize);
+    view?.removeEventListener("load", this.onResize);
+    if (this.layoutFrame !== null) view?.cancelAnimationFrame(this.layoutFrame);
+    this.layoutFrame = null;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     for (const { host } of this.tracked.values()) host.remove();
@@ -77,6 +134,7 @@ export class SerpController {
     }
 
     const alive = new Set<HTMLElement>();
+    const known = this.tracked.size;
     const entries: ResultEntry[] = [];
 
     results.forEach((result, i) => {
@@ -93,11 +151,12 @@ export class SerpController {
           urlKey: result.urlKey,
           host: result.host,
           mount,
-          snippetHeight: snippetHeight(result.element),
+          geo: null,
         });
-        item = { entry, host };
+        item = { entry, host, element: result.element, titleElement: result.titleElement };
         this.tracked.set(result.element, item);
       } else {
+        item.titleElement = result.titleElement;
         item.entry.index = index;
         item.entry.title = result.title;
         item.entry.urlKey = result.urlKey;
@@ -116,10 +175,18 @@ export class SerpController {
       host.remove();
       this.tracked.delete(element);
     }
+    this.resizeObserver?.disconnect();
+    if (this.resizeObserver) {
+      this.resizeObserver.observe(doc.documentElement);
+      for (const element of alive) this.resizeObserver.observe(element);
+    }
 
     const previous = ui.entries.value;
     const changed = previous.length !== entries.length || previous.some((e, i) => e !== entries[i]);
     if (changed) ui.entries.value = entries;
+    // New or moved results need positions right away, not on the next resize.
+    if (entries.length !== known || changed) this.layout();
+    this.scheduleLayout();
     debug("scan", { results: entries.length, base });
   }
 

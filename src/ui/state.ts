@@ -1,4 +1,5 @@
 import { ref, shallowRef, type Ref, type ShallowRef } from "vue";
+import type { EntryGeometry, Rail } from "../core/layout";
 import { DEFAULT_THEME } from "../core/theme";
 import type { BadgeTheme, EffectiveNote, NoteScope } from "../core/types";
 import type { NotesRepository } from "../storage/notes";
@@ -12,8 +13,8 @@ export interface ResultEntry {
   host: string | null;
   /** Container inside the result's shadow root that the controls are teleported to. */
   mount: HTMLElement;
-  /** Height of the result's snippet; the note preview is collapsed to about this height. */
-  snippetHeight: number;
+  /** Where the controls go; null until the page has been measured. */
+  geo: EntryGeometry | null;
 }
 
 export interface AnchorRect {
@@ -31,6 +32,8 @@ export interface PanelRequest {
 
 export interface UiState {
   entries: ShallowRef<ResultEntry[]>;
+  /** Shared by all results so the note column is a straight line. */
+  rail: Ref<Rail>;
   theme: Ref<BadgeTheme>;
   panel: Ref<PanelRequest | null>;
   colorPickerOpen: Ref<boolean>;
@@ -47,6 +50,7 @@ export interface UiState {
 /** Reactive bridge between the repositories/controller and the Vue components. */
 export function createUiState(notes: NotesRepository): UiState {
   const entries = shallowRef<ResultEntry[]>([]);
+  const rail = ref<Rail>({ mode: "card", width: 200, x: 0, badgeRight: 0 });
   const theme = ref<BadgeTheme>({ ...DEFAULT_THEME });
   const panel = ref<PanelRequest | null>(null);
   const colorPickerOpen = ref(false);
@@ -63,6 +67,7 @@ export function createUiState(notes: NotesRepository): UiState {
 
   return {
     entries,
+    rail,
     theme,
     panel,
     colorPickerOpen,

@@ -37,7 +37,6 @@ export interface ShadowMount {
 
 function createShadowMount(doc: Document, tag: string): ShadowMount {
   const host = doc.createElement(tag);
-  host.style.display = "contents";
   const root = host.attachShadow({ mode: "open" });
   attachStyles(root);
   const mount = doc.createElement("div");
@@ -45,12 +44,28 @@ function createShadowMount(doc: Document, tag: string): ShadowMount {
   return { host, mount };
 }
 
+/**
+ * The host is an out-of-flow zero-size box: it can never move Google's layout (it takes no
+ * space and is not a flex/grid item), and it is the positioned ancestor of the controls, so
+ * their offsets are measured from a known point instead of whatever Google positioned.
+ */
 export function createResultMount(doc: Document): ShadowMount {
-  return createShadowMount(doc, RESULT_HOST_TAG);
+  const mount = createShadowMount(doc, RESULT_HOST_TAG);
+  const s = mount.host.style;
+  s.position = "absolute";
+  s.width = "0";
+  s.height = "0";
+  s.overflow = "visible";
+  s.margin = "0";
+  s.padding = "0";
+  s.border = "0";
+  s.zIndex = "2";
+  return mount;
 }
 
 export function createAppMount(doc: Document): ShadowMount {
   const result = createShadowMount(doc, "div");
   result.host.id = APP_HOST_ID;
+  result.host.style.display = "contents";
   return result;
 }

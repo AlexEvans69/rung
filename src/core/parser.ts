@@ -138,15 +138,8 @@ export function findOrganicResults(root: Element, pageUrl: string): OrganicResul
       seenUrlKeys.add(urlKey);
     }
     seenElements.add(element);
-    results.push({ element, anchor, title, finalUrl, urlKey, host });
+    results.push({ element, anchor, titleElement: h3 as HTMLElement, title, finalUrl, urlKey, host });
   }
 
   return results;
-}
-
-/** Height of the snippet of `element`, used to size the note preview next to it. */
-export function snippetHeight(element: Element, fallback = 60): number {
-  const snippet = element.querySelector(SNIPPET_SELECTOR);
-  const height = snippet?.getBoundingClientRect().height ?? 0;
-  return height > 0 ? height : fallback;
 }

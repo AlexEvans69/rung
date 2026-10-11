@@ -15,7 +15,7 @@ const entry = (over: Partial<ResultEntry> = {}): ResultEntry => ({
   urlKey: "https://a.example/x",
   host: "a.example",
   mount: document.createElement("div"),
-  snippetHeight: 60,
+  geo: { titleY: 20, badgeX: -12, railX: 600, roomY: 90 },
   ...over,
 });
 

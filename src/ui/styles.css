@@ -16,17 +16,18 @@ button {
   cursor: pointer;
 }
 
-/* ---- per-result controls ---- */
+/* ---- per-result controls ----
+   Everything is absolutely positioned from the result's host element, so nothing here can
+   move Google's layout. Vertical position (top) is the centre of the title's first line. */
 
 .badge {
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translate(calc(-100% - 12px), -50%);
+  transform: translate(-100%, -50%);
   z-index: 20;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: content-box;
   min-width: 38px;
   height: 26px;
   padding: 0 8px;
@@ -35,35 +36,35 @@ button {
   background: var(--serp-bg);
   color: var(--serp-fg);
   font: 700 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--serp-bg) 30%, transparent);
   user-select: none;
   transition: transform 0.2s ease;
 }
 
 .badge:hover {
-  transform: translate(calc(-100% - 12px), -50%) scale(1.05);
+  transform: translate(-100%, -50%) scale(1.05);
 }
 
-.note-widget {
+.rail {
   position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translate(calc(100% + 10px), -50px);
-  z-index: 100;
-  transform-origin: top center;
+  z-index: 20;
+  transform: translateY(-13px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.note-wrap {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
-  isolation: isolate;
+.rail.mode-icon,
+.rail.mode-inset {
+  transform: translateY(-15px);
 }
 
 .note-btn {
+  height: 26px;
+  padding: 0 12px;
   border: none;
   border-radius: 8px;
-  padding: 6px 12px;
   background: var(--serp-bg);
   color: var(--serp-fg);
   font: 600 12px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -77,11 +78,22 @@ button {
   transform: translateY(-1px);
 }
 
+/* No room beside the column: a square icon button instead of the labelled one. */
+.note-btn.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 15px;
+}
+
 .note-preview {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  width: 100%;
   border-radius: 8px;
   background: var(--serp-bg);
   color: var(--serp-fg);

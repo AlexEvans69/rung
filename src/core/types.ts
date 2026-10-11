@@ -11,6 +11,8 @@ export interface OrganicResult {
   /** The result container (`div[data-hveid]`) the controls are attached to. */
   element: HTMLElement;
   anchor: HTMLAnchorElement;
+  /** The `<h3>` title; controls are vertically aligned to its first line. */
+  titleElement: HTMLElement;
   title: string;
   /** Destination URL with Google's redirect unwrapped, if it could be resolved. */
   finalUrl: string | null;
