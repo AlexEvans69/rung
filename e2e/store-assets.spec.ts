@@ -19,23 +19,49 @@ const BUNDLE = readFileSync(join(DIST, "contentScript.js"), "utf8");
 const LOCKUP = readFileSync(resolve(ROOT, "brand/rung-lockup-on-dark.svg"), "utf8").replace(/ width="[\d.]+" height="[\d.]+"/, "");
 mkdirSync(OUT, { recursive: true });
 
+const QUERY = "buy iphone";
+
+/** Fictional shops (.example domains), no thumbnails: nothing here is a real site or image. */
 const RESULTS: ResultSpec[] = [
-  { host: "northwind-phones.example", title: "Refurbished smartphones with a 12-month warranty", thumbnail: true, rating: true },
-  { host: "pocketshop.example", title: "Compare the best smartphone deals this month", snippet: "Side-by-side prices from 40 shops, updated every hour. Filter by storage, colour and battery health, and see which offers include free delivery and returns." },
-  { host: "handset-hub.example", title: "Certified refurbished phones: up to 50% off, free delivery and returns", thumbnail: true, rating: true },
-  { host: "mobilemarket.example", title: "Buying a smartphone: the complete guide", thumbnail: true },
-  { host: "telco-direct.example", title: "Phone deals and monthly plans", sitelinks: true },
+  {
+    host: "iphonedeals.example",
+    title: "Buy iPhone: current models, prices and storage options",
+    snippet: "Compare iPhone models side by side, check trade-in values and choose pickup or free delivery. Finance available on all new phones.",
+    rating: true,
+  },
+  {
+    host: "mobilestore.example",
+    title: "iPhone with free delivery: buy online or in store",
+    snippet: "Order today and get your new iPhone next day. Every phone is sealed, comes with a 12-month warranty and 30-day returns.",
+  },
+  {
+    host: "refurbished-phones.example",
+    title: "Refurbished iPhone: certified, tested and 40% off",
+    snippet: "Each device passes a 60-point inspection, gets a new battery and ships with a 12-month warranty. Same iPhone, lower price.",
+    rating: true,
+  },
+  {
+    host: "network-direct.example",
+    title: "iPhone contracts and SIM-free deals",
+    snippet: "Pick a plan, add the phone you want and see your monthly cost before you check out.",
+    sitelinks: true,
+  },
+  {
+    host: "phone-guide.example",
+    title: "How to buy the right iPhone: a buyer's guide",
+    snippet: "Which model, how much storage and whether to buy new or refurbished: a short guide to spending less and getting more.",
+  },
 ];
 
 const SEED = {
-  "n:s:pocketshop.example": "Main competitor. Strong comparison pages, thin reviews — we can beat them on the buying guide.",
-  "n:u:https://northwind-phones.example/p0": "Ranks #1 for the money query. Check their schema markup and the FAQ block.",
-  "n:s:handset-hub.example": "Affiliate site.",
+  "n:s:mobilestore.example": "Main competitor. Strong product pages, thin guides: we can beat them on the buying guide.",
+  "n:u:https://iphonedeals.example/p0": "Ranks #1 for the money query. Check their schema markup and the FAQ block.",
+  "n:s:refurbished-phones.example": "Affiliate site.",
 };
 
 async function openSerp(page: Page, dark: boolean): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.setContent(serpPage({ results: RESULTS, dark, query: "refurbished smartphones" }));
+  await page.setContent(serpPage({ results: RESULTS, dark, query: QUERY }));
   await page.evaluate((s) => Object.assign((window as never as { __mem: object }).__mem, s), SEED);
   await page.addScriptTag({ content: BUNDLE });
   await page.waitForSelector("serp-counter-host", { state: "attached" });
@@ -114,7 +140,7 @@ body{margin:0;width:${width}px;height:${height}px;overflow:hidden;background:#12
 p{margin:0;font-size:${big ? 27 : 16}px;color:#c9caf5;line-height:1.4;max-width:${big ? 460 : 330}px}
 .s{flex:none;width:${big ? 700 : 0}px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 24px 56px rgba(0,0,0,.45);display:${withShot ? "block" : "none"}}
 .s img{width:100%;display:block}
-</style><div class="l"><div class="lockup">${LOCKUP}</div><p>Number every result. Pin notes where you search.</p></div>
+</style><div class="l"><div class="lockup">${LOCKUP}</div><p>Counts SERP for you.</p></div>
 <div class="s">${withShot ? `<img src="${shotData}">` : ""}</div>`;
 }
 
