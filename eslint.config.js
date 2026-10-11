@@ -12,6 +12,10 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
+    files: ["scripts/**/*.mjs", "*.config.{js,ts}"],
+    languageOptions: { globals: { process: "readonly", console: "readonly" } },
+  },
+  {
     languageOptions: { globals: { chrome: "readonly" } },
     rules: {
       "vue/multi-word-component-names": "off",

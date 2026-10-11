@@ -25,8 +25,12 @@ await page.setContent(`<style>html,body{margin:0;background:#fff}</style>
 await page.evaluate((s) => {
   const img = document.getElementById("i");
   return new Promise((res) => {
-    const set = () => { img.style.setProperty("--w", img.naturalWidth * s + "px"); res(); };
-    img.complete ? set() : (img.onload = set);
+    const set = () => {
+      img.style.setProperty("--w", img.naturalWidth * s + "px");
+      res();
+    };
+    if (img.complete) set();
+    else img.onload = set;
   });
 }, scale);
 await page.screenshot({ path: output, clip: { x: 0, y: 0, width: 1280, height: 800 } });
