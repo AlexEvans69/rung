@@ -117,6 +117,32 @@ describe("findOrganicResults", () => {
     });
   });
 
+  // Regression (3.2 behaviour): only button[jsaction] / PAA markers are controls.
+  it("counts a result wrapped in a plain role=button container", () => {
+    const html = `<div id="search"><div class="MjjYud"><div role="button" data-hveid="x1"><div class="yuRUbf">
+      <a href="https://real.example/page"><h3>Wrapped result</h3></a>
+    </div><div class="VwiC3b">A snippet</div></div></div></div>`;
+    expect(find(html).map((r) => r.title)).toEqual(["Wrapped result"]);
+  });
+
+  it("still skips PAA questions (data-initq) and accordion buttons with jsaction", () => {
+    const html = `<div id="search">
+      <div class="MjjYud"><div data-hveid="a" ><div class="yuRUbf"><div data-initq="q"><a href="#"><h3>Question one?</h3></a></div></div><div class="VwiC3b">answer</div></div></div>
+      <div class="MjjYud"><div data-hveid="b" ><div class="yuRUbf"><button jsaction="click:x"><a href="https://x.example/"><h3>Question two?</h3></a></button></div><div class="VwiC3b">answer</div></div></div>
+    </div>`;
+    expect(find(html)).toEqual([]);
+  });
+
+  it("does not drop a result as a duplicate when only its breadcrumb matches another's", () => {
+    const results = find(
+      serp(
+        organic({ title: "One", url: "https://same.example/", redirect: "goto" }),
+        organic({ title: "Two", url: "https://same.example/", redirect: "goto" }),
+      ),
+    );
+    expect(results.map((r) => r.title)).toEqual(["One", "Two"]);
+  });
+
   it("skips paid results, wherever the container is", () => {
     expect(find(serp(adBlock(), organic())).length).toBe(1);
     expect(find(`<div id="search">${adBlock()}${organic()}</div>`).length).toBe(1);

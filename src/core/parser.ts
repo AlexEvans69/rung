@@ -23,8 +23,12 @@ const TITLE_CONTAINER_SELECTOR = ".yuRUbf";
 /** Containers holding the result snippet. */
 const SNIPPET_SELECTOR = ".VwiC3b, .IsZvec, .aCOpRe, [data-sncf]";
 
-/** A title living inside one of these is a widget control (e.g. a PAA question), not a result. */
-const CONTROL_SELECTOR = "button, [role='button'], g-accordion-expander, [data-initq]";
+/**
+ * A title living inside one of these is a widget control (e.g. a PAA question), not a result.
+ * Deliberately narrow, as in 3.2: a plain `button` or `role="button"` wrapper also appears
+ * around real results on some layouts, and excluding those silently dropped them.
+ */
+const CONTROL_SELECTOR = "button[jsaction], g-accordion-expander, [data-initq]";
 
 /** Class-name fragments of non-organic SERP modules. */
 const EXCLUDED_MODULE_CLASSES = [
@@ -246,12 +250,14 @@ export function findOrganicResults(
     });
     let picked: { anchor: HTMLAnchorElement; raw: string; finalUrl: string | null; host: string | null } | undefined =
       resolved.find((r) => !r.opaque && !isExcludedHref(r.raw, r.host));
+    let derived = false;
 
     if (!picked) {
       const opaque = resolved.find((r) => r.opaque);
       if (opaque) {
         const shown = displayedAddress(element);
         picked = { anchor: opaque.anchor, raw: opaque.raw, finalUrl: shown?.url ?? null, host: shown?.host ?? null };
+        derived = true;
         if (isYouTubeHost(picked.host) || (isGoogleHost(picked.host) && picked.host !== "news.google.com")) {
           href = picked.raw;
           reject("redirect to YouTube or Google's own page");
@@ -266,7 +272,9 @@ export function findOrganicResults(
     }
 
     const urlKey = picked.finalUrl ? normalizeUrlKey(picked.finalUrl) : null;
-    if (urlKey) {
+    // A crumb is a truncated address, so two different results can share one; only real
+    // links are used to de-duplicate (the same page listed twice).
+    if (urlKey && !derived) {
       if (seenUrlKeys.has(urlKey)) {
         reject("duplicate URL");
         continue;
