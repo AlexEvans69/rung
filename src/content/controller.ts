@@ -1,9 +1,9 @@
 import { reactive } from "vue";
-import { debug } from "../core/log";
+import { debug, isDebugEnabled } from "../core/log";
 import { computeBase, getPageContext } from "../core/numbering";
 import { sameGeometry } from "../core/layout";
 import { detectPageTheme } from "../core/pageTheme";
-import { findOrganicResults } from "../core/parser";
+import { findOrganicResults, type Rejection } from "../core/parser";
 import type { PageCounts } from "../storage/counts";
 import { RESULT_HOST_TAG, createResultMount } from "../ui/shadow";
 import { measureLayout } from "./measure";
@@ -135,7 +135,15 @@ export class SerpController {
   scan(): void {
     const { doc, location, counts, ui } = this.deps;
     const root = doc.getElementById("search");
-    const results = root ? findOrganicResults(root, location.href) : [];
+    const rejected: Rejection[] = [];
+    const diagnose = isDebugEnabled();
+    const results = root
+      ? findOrganicResults(root, location.href, diagnose ? (r) => rejected.push(r) : undefined)
+      : [];
+    if (diagnose && root && results.length === 0 && rejected.length > 0) {
+      // One string per title so DevTools prints it in full instead of a collapsed object.
+      debug("rejected:\n" + rejected.slice(0, 12).map((r) => `- ${r.reason} | ${r.title} | ${r.href}`).join("\n"));
+    }
 
     ui.pageTheme.value = detectPageTheme(doc);
 

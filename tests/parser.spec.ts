@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { findOrganicResults } from "../src/core/parser";
+import { findOrganicResults, type Rejection } from "../src/core/parser";
 import { adBlock, mountSerp, organic, peopleAlsoAsk, productPack, serp, videoCarousel } from "./helpers/serp";
 
 const PAGE = "https://www.google.com/search?q=test";
@@ -46,6 +46,39 @@ describe("findOrganicResults", () => {
     const direct = find(serp(organic({ url: "https://alpha.example/a?x=1" })))[0];
     const wrapped = find(serp(organic({ url: "https://alpha.example/a?x=1", redirect: "url" })))[0];
     expect(wrapped?.urlKey).toBe(direct?.urlKey);
+  });
+
+  it("uses the first link that leads somewhere real when an earlier one belongs to Google", () => {
+    const html = `<div id="search"><div class="MjjYud"><div data-hveid="x1"><div class="yuRUbf">
+      <a href="https://www.google.com/search?q=related"><span>menu</span></a>
+      <h3>Real title</h3>
+      <a href="/url?sa=t&q=&url=https%3A%2F%2Freal.example%2Fpage"><span>site</span></a>
+    </div><div class="VwiC3b">snippet text</div></div></div></div>`;
+    const [r] = find(html);
+    expect(r?.title).toBe("Real title");
+    expect(r?.host).toBe("real.example");
+  });
+
+  it("reports why every skipped title was skipped", () => {
+    const reasons: Rejection[] = [];
+    findOrganicResults(
+      mountSerp(
+        serp(
+          organic({ title: "no snippet", snippet: null }),
+          organic({ title: "to google", url: "https://www.google.com/maps/place/x" }),
+          peopleAlsoAsk(),
+          organic({ title: "fine" }),
+        ),
+      ),
+      PAGE,
+      (r) => reasons.push(r),
+    );
+    const byTitle = Object.fromEntries(reasons.map((r) => [r.title, r.reason]));
+    expect(byTitle["no snippet"]).toMatch(/no snippet/);
+    expect(byTitle["to google"]).toMatch(/Google/);
+    expect(byTitle["Is a refurbished iPhone worth it?"] ?? byTitle["Why is the sky blue?"]).toMatch(/control|module/);
+    expect(byTitle["fine"]).toBeUndefined();
+    expect(reasons.find((r) => r.title === "to google")?.href).toContain("google.com/maps");
   });
 
   it("skips paid results, wherever the container is", () => {

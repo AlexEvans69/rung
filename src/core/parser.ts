@@ -90,11 +90,36 @@ function resultElementFor(h3: Element): HTMLElement | null {
   return h3.closest<HTMLElement>("div[data-hveid]");
 }
 
+/** Why a title was not counted as an organic result (reported to `onReject`, for diagnostics). */
+export interface Rejection {
+  title: string;
+  reason: string;
+  href: string;
+}
+
+/** Links that could be the title's: its own anchor first, then the others in the title box. */
+function candidateAnchors(h3: Element): HTMLAnchorElement[] {
+  const list: HTMLAnchorElement[] = [];
+  const own = h3.closest<HTMLAnchorElement>("a[href]");
+  if (own) list.push(own);
+  const box = h3.closest(TITLE_CONTAINER_SELECTOR) ?? h3.parentElement?.parentElement?.parentElement;
+  box?.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((a) => {
+    if (!list.includes(a)) list.push(a);
+  });
+  return list;
+}
+
 /**
  * Returns the organic results below `root` in document order. Paid results, modules,
  * results without a snippet and duplicates of an already seen URL are skipped.
+ * `onReject` is told about every skipped title and why, which makes "nothing is numbered"
+ * reports diagnosable from the page.
  */
-export function findOrganicResults(root: Element, pageUrl: string): OrganicResult[] {
+export function findOrganicResults(
+  root: Element,
+  pageUrl: string,
+  onReject?: (rejection: Rejection) => void,
+): OrganicResult[] {
   // Prefer Google's known title container; if Google renames it, fall back to every <h3>
   // and let the structural filters below do the work.
   const titles = root.querySelector(TITLE_CONTAINER_SELECTOR)
@@ -106,39 +131,83 @@ export function findOrganicResults(root: Element, pageUrl: string): OrganicResul
   const seenUrlKeys = new Set<string>();
 
   for (const h3 of titles) {
-    const element = resultElementFor(h3);
-    if (!element || seenElements.has(element)) continue;
-
-    if (element.closest(ADS_SELECTOR)) continue;
-    if (h3.closest(CONTROL_SELECTOR)) continue;
-
-    const anchor =
-      h3.closest<HTMLAnchorElement>("a[href]") ??
-      h3.closest(TITLE_CONTAINER_SELECTOR)?.querySelector<HTMLAnchorElement>("a[href]") ??
-      null;
-    if (!anchor) continue;
-
     const title = h3.textContent?.trim() ?? "";
-    if (!title) continue;
+    let href = "";
+    const reject = (reason: string): void => onReject?.({ title: title.slice(0, 60), reason, href: href.slice(0, 200) });
 
-    if (isInsideExcludedModule(element, root)) continue;
+    const element = resultElementFor(h3);
+    if (!element) {
+      reject("no result container (div[data-hveid])");
+      continue;
+    }
+    if (seenElements.has(element)) continue;
+
+    if (element.closest(ADS_SELECTOR)) {
+      reject("inside paid results");
+      continue;
+    }
+    if (h3.closest(CONTROL_SELECTOR)) {
+      reject("inside a control or accordion");
+      continue;
+    }
+    if (!title) {
+      reject("empty title");
+      continue;
+    }
+
+    const candidates = candidateAnchors(h3);
+    if (candidates.length === 0) {
+      reject("no link");
+      continue;
+    }
+
+    if (isInsideExcludedModule(element, root)) {
+      reject("inside a non-organic module (class or data-attrid)");
+      continue;
+    }
     const wrapper = element.closest(WRAPPER_SELECTOR);
-    if (wrapper && wrapper !== element && isInsideExcludedModule(wrapper, root)) continue;
+    if (wrapper && wrapper !== element && isInsideExcludedModule(wrapper, root)) {
+      reject("wrapper is a non-organic module");
+      continue;
+    }
 
-    if (!hasSnippet(element)) continue;
+    if (!hasSnippet(element)) {
+      reject(`no snippet (none of ${SNIPPET_SELECTOR})`);
+      continue;
+    }
 
-    const href = anchor.getAttribute("href") ?? "";
-    const finalUrl = extractFinalUrl(href, pageUrl);
-    const host = finalUrl ? hostFromUrl(finalUrl) : null;
-    if (isExcludedHref(href, host)) continue;
+    // Take the first link in the title box that leads somewhere real. In signed-out
+    // layouts the first anchor can belong to Google (menus, redirects we can't unwrap).
+    const resolved = candidates.map((anchor) => {
+      const raw = anchor.getAttribute("href") ?? "";
+      const finalUrl = extractFinalUrl(raw, pageUrl);
+      return { anchor, raw, finalUrl, host: finalUrl ? hostFromUrl(finalUrl) : null };
+    });
+    const picked = resolved.find((r) => !isExcludedHref(r.raw, r.host));
+    href = (picked ?? resolved[0])?.raw ?? "";
+    if (!picked) {
+      reject("every link points to Google, YouTube or the page itself");
+      continue;
+    }
 
-    const urlKey = finalUrl ? normalizeUrlKey(finalUrl) : null;
+    const urlKey = picked.finalUrl ? normalizeUrlKey(picked.finalUrl) : null;
     if (urlKey) {
-      if (seenUrlKeys.has(urlKey)) continue;
+      if (seenUrlKeys.has(urlKey)) {
+        reject("duplicate URL");
+        continue;
+      }
       seenUrlKeys.add(urlKey);
     }
     seenElements.add(element);
-    results.push({ element, anchor, titleElement: h3 as HTMLElement, title, finalUrl, urlKey, host });
+    results.push({
+      element,
+      anchor: picked.anchor,
+      titleElement: h3 as HTMLElement,
+      title,
+      finalUrl: picked.finalUrl,
+      urlKey,
+      host: picked.host,
+    });
   }
 
   return results;
