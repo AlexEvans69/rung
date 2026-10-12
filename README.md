@@ -31,7 +31,7 @@ or any other text you want to have next to the results.
 ## Privacy
 
 Everything stays in your browser (`chrome.storage.local`). The extension makes no network requests, has no
-background script and asks for a single permission: `storage`.
+background script and asks for a single permission: `storage`. Full text: [PRIVACY.md](PRIVACY.md).
 
 ## Install from source
 
