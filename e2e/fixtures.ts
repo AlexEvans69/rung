@@ -22,8 +22,8 @@ export interface PageOpts {
   paa?: boolean;
   /** Shows a search box with this query instead of a plain "Search bar" label. */
   query?: string;
-  /** Wrap every result link as Google's signed-out redirect: /url?q=&url=<target>. */
-  redirectLinks?: boolean;
+  /** Wrap every result link as Google's signed-out redirect: /url?q=&url=<target>, or the opaque /goto?url=<token>. */
+  redirectLinks?: boolean | "goto";
 }
 
 export const DEFAULT_RESULTS: ResultSpec[] = [
@@ -36,10 +36,15 @@ export const DEFAULT_RESULTS: ResultSpec[] = [
 
 const SNIPPET = "Compare prices, read verified reviews and find the best offer for your next phone. Free delivery and easy returns on most orders.";
 
-function result(r: ResultSpec, i: number, positioned: boolean, redirect: boolean): string {
+function result(r: ResultSpec, i: number, positioned: boolean, redirect: boolean | "goto"): string {
   const slug = r.host.replace(/[^a-z0-9]/g, "");
   const target = `https://${r.host}/p${i}`;
-  const href = redirect ? `/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ah&url=${encodeURIComponent(target)}&usg=AOv` : target;
+  const href =
+    redirect === "goto"
+      ? `/goto?url=CAESVgHrOzAV${Buffer.from(target).toString("base64url")}`
+      : redirect
+        ? `/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ah&url=${encodeURIComponent(target)}&usg=AOv`
+        : target;
   return `
 <div class="MjjYud"><div data-hveid="h${i}" class="res" style="${positioned ? "position:relative;" : ""}${r.thumbnail ? "" : "width:560px;"}">
   <div class="meta"><span class="fav"></span><div><div class="site">${r.host}</div><div class="crumb">https://${r.host} › home</div></div><span class="dots">⋮</span></div>
@@ -58,7 +63,7 @@ function result(r: ResultSpec, i: number, positioned: boolean, redirect: boolean
 export function serpPage(opts: PageOpts = {}): string {
   const dark = opts.dark ?? false;
   const results = opts.results ?? DEFAULT_RESULTS;
-  const html = results.map((r, i) => result(r, i, !!opts.positionedResults, !!opts.redirectLinks)).join("");
+  const html = results.map((r, i) => result(r, i, !!opts.positionedResults, opts.redirectLinks ?? false)).join("");
   const paa = opts.paa
     ? `<div class="MjjYud"><div data-hveid="paa" class="related-question-pair"><div class="yuRUbf"><div role="button" data-initq="q"><a href="#"><h3>Is a refurbished iPhone worth it?</h3></a></div></div><div class="VwiC3b">Usually yes.</div></div></div>`
     : "";

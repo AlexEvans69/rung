@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { findOrganicResults, type Rejection } from "../src/core/parser";
+import { displayedAddress, findOrganicResults, type Rejection } from "../src/core/parser";
 import { adBlock, mountSerp, organic, peopleAlsoAsk, productPack, serp, videoCarousel } from "./helpers/serp";
 
 const PAGE = "https://www.google.com/search?q=test";
@@ -81,6 +81,42 @@ describe("findOrganicResults", () => {
     expect(reasons.find((r) => r.title === "to google")?.href).toContain("google.com/maps");
   });
 
+  // Regression: incognito results on gambling queries link through /goto?url=<opaque token>.
+  // The target cannot be read from the link, so the displayed breadcrumb is used instead.
+  describe("opaque /goto redirects", () => {
+    it("numbers them and takes host and address from the visible breadcrumb", () => {
+      const results = find(
+        serp(
+          organic({ title: "First", url: "https://alpha.example/shop/item", redirect: "goto" }),
+          organic({ title: "Second", url: "https://beta.example/", redirect: "goto" }),
+        ),
+      );
+      expect(results.map((r) => r.title)).toEqual(["First", "Second"]);
+      expect(results.map((r) => r.host)).toEqual(["alpha.example", "beta.example"]);
+      expect(results[0]?.urlKey).toBe("https://alpha.example/shop/item");
+      expect(results[0]?.finalUrl).toBe("https://alpha.example/shop/item");
+    });
+
+    it("still numbers a result whose address is not shown, without a note key", () => {
+      const [r] = find(serp(organic({ url: "https://alpha.example/a", redirect: "goto", noCrumb: true })));
+      expect(r).toBeDefined();
+      expect(r?.host).toBeNull();
+      expect(r?.urlKey).toBeNull();
+    });
+
+    it("skips a redirect that the breadcrumb shows leads to YouTube", () => {
+      const results = find(serp(organic({ url: "https://www.youtube.com/watch?v=1", redirect: "goto" })));
+      expect(results).toEqual([]);
+    });
+
+    it("does not treat Google ad redirects as organic", () => {
+      const html = `<div id="search"><div class="MjjYud"><div data-hveid="a1"><div class="yuRUbf">
+        <a href="/aclk?sa=l&ai=xyz&adurl=https%3A%2F%2Fads.example%2F"><h3>Ad</h3></a>
+      </div><div class="VwiC3b">buy now</div></div></div></div>`;
+      expect(find(html)).toEqual([]);
+    });
+  });
+
   it("skips paid results, wherever the container is", () => {
     expect(find(serp(adBlock(), organic())).length).toBe(1);
     expect(find(`<div id="search">${adBlock()}${organic()}</div>`).length).toBe(1);
@@ -143,5 +179,40 @@ describe("findOrganicResults", () => {
   it("anchors controls to the result's data-hveid element", () => {
     const [r] = find(serp(organic()));
     expect(r?.element.hasAttribute("data-hveid")).toBe(true);
+  });
+});
+
+describe("displayedAddress", () => {
+  const el = (html: string) => {
+    const d = document.createElement("div");
+    d.innerHTML = html;
+    return d;
+  };
+
+  it("reads host and path from a breadcrumb", () => {
+    expect(displayedAddress(el("KRCS https://www.krcs.co.uk › mac › macbook-pro"))).toEqual({
+      url: "https://www.krcs.co.uk/mac/macbook-pro",
+      host: "krcs.co.uk",
+    });
+  });
+
+  it("keeps spaces in segments and drops truncated ones", () => {
+    expect(displayedAddress(el("Currys https://www.currys.co.uk › ... › Laptops › All laptops"))?.url).toBe(
+      "https://www.currys.co.uk/Laptops/All%20laptops",
+    );
+  });
+
+  it("does not glue the crumb to the title that follows it", () => {
+    const e = el('<div><span>https://www.krcs.co.uk › mac › macbook-pro</span><span>⋮</span></div><h3>Apple MacBook Pro | Buy Online</h3>');
+    expect(displayedAddress(e)?.url).toBe("https://www.krcs.co.uk/mac/macbook-pro");
+  });
+
+  it("ignores a trailing menu glyph and a multi-word site name", () => {
+    expect(displayedAddress(el("<div>John Lewis https://www.johnlewis.com › browse⋮</div>"))?.host).toBe("johnlewis.com");
+  });
+
+  it("prefers the first matching element and returns null when nothing looks like an address", () => {
+    expect(displayedAddress(el("<cite>https://a.example › x</cite><p>see https://b.example for more</p>"))?.host).toBe("a.example");
+    expect(displayedAddress(el("no address here"))).toBeNull();
   });
 });

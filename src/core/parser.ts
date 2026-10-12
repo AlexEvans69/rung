@@ -1,5 +1,5 @@
 import type { OrganicResult } from "./types";
-import { extractFinalUrl, hostFromUrl, isGoogleHost, isYouTubeHost, normalizeUrlKey } from "./urls";
+import { extractFinalUrl, hostFromUrl, isGoogleHost, isYouTubeHost, normalizeHost, normalizeUrlKey } from "./urls";
 
 /**
  * Finds organic results in a Google SERP.
@@ -97,6 +97,62 @@ export interface Rejection {
   href: string;
 }
 
+/**
+ * Google redirects whose target is an opaque token (`/goto?url=CAES...`) or one we could not
+ * unwrap. Such a link on an otherwise organic block is still an organic result; the page
+ * just does not say where it leads, so the address is read from the visible breadcrumb.
+ */
+const OPAQUE_REDIRECT_PATHS = new Set(["/goto", "/url"]);
+
+function isOpaqueGoogleRedirect(raw: string, pageUrl: string): boolean {
+  try {
+    const u = new URL(raw, pageUrl);
+    return isGoogleHost(normalizeHost(u.hostname)) && OPAQUE_REDIRECT_PATHS.has(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** A whole element's text is an address crumb: optional site name, a URL, then `› segment` parts. */
+const CRUMB = /^(?:.{0,60}?\s)?(https?:\/\/[^\s›]+)((?:\s*›\s*[^›]+?)*)\s*[^\w\s]*$/u;
+
+/**
+ * The address a result displays under its title ("https://www.example.com › shop › item").
+ * Used when the link itself is opaque. Each element is matched as a whole, so the crumb is
+ * never glued to the title or snippet text that follows it. Truncated crumbs ("...") are
+ * dropped, so the path is best-effort; the host is reliable.
+ */
+export function displayedAddress(element: Element): { url: string; host: string } | null {
+  for (const node of [element, ...element.querySelectorAll("cite, span, div, a")]) {
+    // A container that also holds the title or snippet is not the crumb itself.
+    if (node.querySelector(`h3, ${SNIPPET_SELECTOR}`)) continue;
+    const raw = node.textContent ?? "";
+    if (raw.length > 240) continue;
+    const m = raw.replace(/\s+/g, " ").trim().match(CRUMB);
+    if (!m?.[1]) continue;
+    const host = hostFromUrl(m[1]);
+    if (!host) continue;
+    const segments = (m[2] ?? "")
+      .split("›")
+      .map((part) => part.trim())
+      .filter((part) => part && part !== "..." && part !== "…");
+    const origin = m[1].replace(/\/+$/, "");
+    try {
+      const url = new URL(segments.length ? `${origin}/${segments.join("/")}` : origin).toString();
+      return { url, host };
+    } catch {
+      return { url: origin, host };
+    }
+  }
+  return null;
+}
+
+function describe(el: Element): string {
+  const role = el.getAttribute("role");
+  const cls = (el.getAttribute("class") ?? "").trim().split(/\s+/).slice(0, 3).join(" ");
+  return `<${el.tagName.toLowerCase()}${role ? ` role=${role}` : ""}${cls ? ` class="${cls}"` : ""}>`;
+}
+
 /** Links that could be the title's: its own anchor first, then the others in the title box. */
 function candidateAnchors(h3: Element): HTMLAnchorElement[] {
   const list: HTMLAnchorElement[] = [];
@@ -126,6 +182,9 @@ export function findOrganicResults(
     ? root.querySelectorAll(`${TITLE_CONTAINER_SELECTOR} h3`)
     : root.querySelectorAll("h3");
 
+  // Relative links need an http(s) base; fall back to Google's origin (e.g. in a test page).
+  const base = /^https?:\/\//i.test(pageUrl) ? pageUrl : "https://www.google.com/";
+
   const results: OrganicResult[] = [];
   const seenElements = new Set<Element>();
   const seenUrlKeys = new Set<string>();
@@ -146,8 +205,9 @@ export function findOrganicResults(
       reject("inside paid results");
       continue;
     }
-    if (h3.closest(CONTROL_SELECTOR)) {
-      reject("inside a control or accordion");
+    const control = h3.closest(CONTROL_SELECTOR);
+    if (control) {
+      reject(`inside a control or accordion ${describe(control)}`);
       continue;
     }
     if (!title) {
@@ -176,14 +236,29 @@ export function findOrganicResults(
       continue;
     }
 
-    // Take the first link in the title box that leads somewhere real. In signed-out
-    // layouts the first anchor can belong to Google (menus, redirects we can't unwrap).
+    // Take the first link in the title box that leads somewhere real. In signed-out layouts
+    // the first anchor can belong to Google (menus, redirects we can't unwrap).
     const resolved = candidates.map((anchor) => {
       const raw = anchor.getAttribute("href") ?? "";
-      const finalUrl = extractFinalUrl(raw, pageUrl);
-      return { anchor, raw, finalUrl, host: finalUrl ? hostFromUrl(finalUrl) : null };
+      const finalUrl = extractFinalUrl(raw, base);
+      const host = finalUrl ? hostFromUrl(finalUrl) : null;
+      return { anchor, raw, finalUrl, host, opaque: isOpaqueGoogleRedirect(raw, base) && isGoogleHost(host) };
     });
-    const picked = resolved.find((r) => !isExcludedHref(r.raw, r.host));
+    let picked: { anchor: HTMLAnchorElement; raw: string; finalUrl: string | null; host: string | null } | undefined =
+      resolved.find((r) => !r.opaque && !isExcludedHref(r.raw, r.host));
+
+    if (!picked) {
+      const opaque = resolved.find((r) => r.opaque);
+      if (opaque) {
+        const shown = displayedAddress(element);
+        picked = { anchor: opaque.anchor, raw: opaque.raw, finalUrl: shown?.url ?? null, host: shown?.host ?? null };
+        if (isYouTubeHost(picked.host) || (isGoogleHost(picked.host) && picked.host !== "news.google.com")) {
+          href = picked.raw;
+          reject("redirect to YouTube or Google's own page");
+          continue;
+        }
+      }
+    }
     href = (picked ?? resolved[0])?.raw ?? "";
     if (!picked) {
       reject("every link points to Google, YouTube or the page itself");

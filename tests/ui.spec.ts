@@ -85,6 +85,21 @@ describe("NoteEditor", () => {
     expect(wrapper.emitted("save")).toEqual([[{ scope: "url", text: "keep" }]]);
   });
 
+  it("explains and blocks saving when the result's address could not be determined", async () => {
+    const wrapper = mount(NoteEditor, {
+      props: editorProps({ available: { url: false, site: true }, texts: { url: "", site: "" } }),
+    });
+    await wrapper.find("textarea").setValue("text");
+    expect(wrapper.find(".hint.warn").text()).toContain("Whole site");
+    expect(wrapper.find(".btn.primary").attributes("disabled")).toBeDefined();
+    (wrapper.vm as unknown as { save(): void }).save();
+    expect(wrapper.emitted("save")).toBeUndefined();
+
+    await wrapper.findAll(".seg button")[1]!.trigger("click");
+    expect(wrapper.find(".hint.warn").exists()).toBe(false);
+    expect(wrapper.find(".btn.primary").attributes("disabled")).toBeUndefined();
+  });
+
   it("exposes save() for the click-outside behaviour and labels the segmented control", () => {
     const wrapper = mount(NoteEditor, { props: editorProps({ texts: { url: "abc", site: "" } }) });
     (wrapper.vm as unknown as { save(): void }).save();

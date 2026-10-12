@@ -209,6 +209,21 @@ test.describe("rails", () => {
     expectAligned(s, DEFAULT_RESULTS.length);
   });
 
+  test("numbers results behind opaque /goto links and keeps notes working (incognito, gambling queries)", async ({ page }) => {
+    await open(page, { redirectLinks: "goto" });
+    const s = await snapshot(page);
+    expect(s.badges.map((b) => b.text)).toEqual(["1", "2", "3", "4", "5"]);
+    expectAligned(s, DEFAULT_RESULTS.length);
+
+    // a site note can be saved: the site comes from the visible breadcrumb
+    await page.locator("serp-counter-host").first().locator(".rail .chip").click();
+    const editor = page.locator("#serp-counter-app");
+    await editor.getByRole("button", { name: "Whole site" }).click();
+    await editor.locator("textarea").fill("works behind goto links");
+    await editor.getByRole("button", { name: "Save" }).click();
+    await expect(page.locator("serp-counter-host").first().locator(".card-text")).toHaveText("works behind goto links");
+  });
+
   test("People-also-ask rows are not numbered and do not break alignment", async ({ page }) => {
     await open(page, { paa: true });
     const s = await snapshot(page);

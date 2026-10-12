@@ -8,6 +8,8 @@ const props = defineProps<{
   path: string;
   scope: NoteScope;
   texts: Record<NoteScope, string>;
+  /** Whether Rung could work out this result's address (page) and site, so a note can be stored. */
+  available?: Record<NoteScope, boolean>;
 }>();
 
 const emit = defineEmits<{
@@ -36,6 +38,14 @@ const priorityHint = computed(() =>
   scope.value === "site" && props.texts.url ? "This page has its own note, which takes priority here." : "",
 );
 const canDelete = computed(() => !!props.texts[scope.value]);
+const canSave = computed(() => props.available?.[scope.value] !== false);
+const unavailableHint = computed(() =>
+  canSave.value
+    ? ""
+    : scope.value === "url"
+      ? "Google hides this result's exact address, so a page note can't be saved. Use Whole site."
+      : "Rung can't tell which site this result is, so a note can't be saved.",
+);
 
 function select(next: NoteScope): void {
   if (next === scope.value) return;
@@ -49,6 +59,7 @@ function onInput(): void {
 }
 
 function save(): void {
+  if (!canSave.value) return;
   emit("save", { scope: scope.value, text: text.value });
 }
 
@@ -92,6 +103,7 @@ defineExpose({ save });
       </button>
     </div>
     <p class="hint">{{ scopeHint }} <span v-if="priorityHint">{{ priorityHint }}</span></p>
+    <p v-if="unavailableHint" class="hint warn" role="status">{{ unavailableHint }}</p>
 
     <textarea
       ref="textarea"
@@ -116,7 +128,7 @@ defineExpose({ save });
       <span class="count">{{ text.length }} chars</span>
       <span class="spacer"></span>
       <button type="button" class="btn" @click="emit('close')">Cancel</button>
-      <button type="button" class="btn primary" @click="save">Save</button>
+      <button type="button" class="btn primary" :disabled="!canSave" @click="save">Save</button>
     </footer>
     <p class="keys">Esc cancels · Ctrl/⌘+Enter saves · clicking outside saves</p>
   </div>

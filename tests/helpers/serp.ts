@@ -5,22 +5,34 @@ export interface OrganicOpts {
   url?: string;
   snippet?: string | null;
   /** Wrap the link the way Google sometimes does: /url?q=<target>, or /url?q=&url=<target> when signed out. */
-  redirect?: boolean | "url";
+  redirect?: boolean | "url" | "goto";
+  /** For redirect "goto": omit the visible breadcrumb under the title. */
+  noCrumb?: boolean;
 }
 
 let counter = 0;
 
-export function organic({ title, url, snippet = "A useful description of the page.", redirect }: OrganicOpts = {}): string {
+export function organic({ title, url, snippet = "A useful description of the page.", redirect, noCrumb }: OrganicOpts = {}): string {
   const n = ++counter;
   const target = url ?? `https://site${n}.example/page`;
+  const token = "CAESVgHrOzAV" + Buffer.from(target).toString("base64url");
   const href =
-    redirect === "url"
+    redirect === "goto"
+      ? `/goto?url=${token}`
+      : redirect === "url"
       ? `/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ah&url=${encodeURIComponent(target)}&usg=AOv`
       : redirect
         ? `/url?q=${encodeURIComponent(target)}&sa=U`
         : target;
   const snippetHtml = snippet === null ? "" : `<div class="VwiC3b"><span>${snippet}</span></div>`;
-  return `<div class="MjjYud"><div data-hveid="h${n}"><div class="yuRUbf"><a href="${href}"><h3>${title ?? `Result ${n}`}</h3></a></div>${snippetHtml}</div></div>`;
+  const crumb =
+    redirect === "goto" && !noCrumb
+      ? `<div class="crumb"><span>Site</span> ${(() => {
+          const u = new URL(target);
+          return `${u.origin} › ${u.pathname.split("/").filter(Boolean).join(" › ")}`;
+        })()}</div>`
+      : "";
+  return `<div class="MjjYud"><div data-hveid="h${n}">${crumb}<div class="yuRUbf"><a href="${href}"><h3>${title ?? `Result ${n}`}</h3></a></div>${snippetHtml}</div></div>`;
 }
 
 /** "People also ask" block: question titles are <h3>-like controls inside accordions. */

@@ -85,6 +85,7 @@ watch(colorPicker, (now, before) => {
         :path="editorPath"
         :scope="panel.scope"
         :texts="panel.texts"
+        :available="{ url: !!panel.entry.urlKey, site: !!panel.entry.host }"
         @save="({ scope, text }) => state.saveNote(scope, text)"
         @delete="({ scope }) => state.deleteNote(scope)"
         @close="state.closePanel()"
