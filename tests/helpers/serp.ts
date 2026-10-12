@@ -4,8 +4,8 @@ export interface OrganicOpts {
   title?: string;
   url?: string;
   snippet?: string | null;
-  /** Wrap the link the way Google sometimes does: /url?q=<target>. */
-  redirect?: boolean;
+  /** Wrap the link the way Google sometimes does: /url?q=<target>, or /url?q=&url=<target> when signed out. */
+  redirect?: boolean | "url";
 }
 
 let counter = 0;
@@ -13,7 +13,12 @@ let counter = 0;
 export function organic({ title, url, snippet = "A useful description of the page.", redirect }: OrganicOpts = {}): string {
   const n = ++counter;
   const target = url ?? `https://site${n}.example/page`;
-  const href = redirect ? `/url?q=${encodeURIComponent(target)}&sa=U` : target;
+  const href =
+    redirect === "url"
+      ? `/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ah&url=${encodeURIComponent(target)}&usg=AOv`
+      : redirect
+        ? `/url?q=${encodeURIComponent(target)}&sa=U`
+        : target;
   const snippetHtml = snippet === null ? "" : `<div class="VwiC3b"><span>${snippet}</span></div>`;
   return `<div class="MjjYud"><div data-hveid="h${n}"><div class="yuRUbf"><a href="${href}"><h3>${title ?? `Result ${n}`}</h3></a></div>${snippetHtml}</div></div>`;
 }

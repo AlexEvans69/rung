@@ -69,6 +69,23 @@ describe("extractFinalUrl", () => {
     );
   });
 
+  it("unwraps the redirect form used when signed out or in incognito (empty q, target in url)", () => {
+    const href =
+      "/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwi&url=https%3A%2F%2Fexample.com%2Fa%3Fx%3D1&usg=AOvVaw";
+    expect(extractFinalUrl(href, base)).toBe("https://example.com/a?x=1");
+    expect(
+      extractFinalUrl(`https://www.google.com${href}`, "https://www.google.com/search?q=casino"),
+    ).toBe("https://example.com/a?x=1");
+  });
+
+  it("ignores a q that is not a URL and falls back to url", () => {
+    expect(extractFinalUrl("/url?q=casino%20online&url=https%3A%2F%2Fexample.com%2F", base)).toBe("https://example.com/");
+  });
+
+  it("never returns a non-http target from a redirect", () => {
+    expect(extractFinalUrl("/url?q=javascript%3Aalert(1)", base)).toBe("https://www.google.com/url?q=javascript%3Aalert(1)");
+  });
+
   it("does not unwrap /url on non-Google hosts", () => {
     expect(extractFinalUrl("https://example.com/url?q=https://evil.test", base)).toBe(
       "https://example.com/url?q=https://evil.test",

@@ -1,3 +1,4 @@
+const HTTP_URL = /^https?:\/\//i;
 const GOOGLE_HOST = /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/;
 
 /**
@@ -62,8 +63,12 @@ export function extractFinalUrl(href: string, baseUrl: string): string | null {
 
   const sameOrigin = url.origin === safeOrigin(baseUrl);
   if (url.pathname === "/url" && (sameOrigin || isGoogleHost(normalizeHost(url.hostname)))) {
-    const target = url.searchParams.get("q") ?? url.searchParams.get("url");
-    if (target) return target;
+    // Google uses `?q=<target>` for some links and `?q=&url=<target>` for others (signed out,
+    // incognito). An empty or non-URL `q` must not hide the real target in `url`.
+    for (const param of ["q", "url"]) {
+      const target = url.searchParams.get(param);
+      if (target && HTTP_URL.test(target)) return target;
+    }
   }
   return url.toString();
 }

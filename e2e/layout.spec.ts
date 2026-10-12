@@ -202,6 +202,13 @@ test.describe("rails", () => {
     expectAligned(s, DEFAULT_RESULTS.length);
   });
 
+  test("numbers results behind Google's signed-out redirect links (incognito)", async ({ page }) => {
+    await open(page, { redirectLinks: true });
+    const s = await snapshot(page);
+    expect(s.badges.map((b) => b.text)).toEqual(["1", "2", "3", "4", "5"]);
+    expectAligned(s, DEFAULT_RESULTS.length);
+  });
+
   test("People-also-ask rows are not numbered and do not break alignment", async ({ page }) => {
     await open(page, { paa: true });
     const s = await snapshot(page);

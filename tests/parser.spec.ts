@@ -28,6 +28,26 @@ describe("findOrganicResults", () => {
     expect(r?.host).toBe("example.com");
   });
 
+  // Regression: signed-out / incognito Google wraps every link as /url?q=&url=<target>.
+  // The parser used to treat all of them as Google's own pages and numbered nothing.
+  it("numbers results whose links go through Google's signed-out redirect", () => {
+    const results = find(
+      serp(
+        organic({ title: "A", url: "https://alpha.example/a", redirect: "url" }),
+        organic({ title: "B", url: "https://beta.example/b", redirect: "url" }),
+      ),
+    );
+    expect(results.map((r) => r.title)).toEqual(["A", "B"]);
+    expect(results.map((r) => r.host)).toEqual(["alpha.example", "beta.example"]);
+    expect(results[0]?.urlKey).toBe("https://alpha.example/a");
+  });
+
+  it("gives a redirected link the same note key as the direct one", () => {
+    const direct = find(serp(organic({ url: "https://alpha.example/a?x=1" })))[0];
+    const wrapped = find(serp(organic({ url: "https://alpha.example/a?x=1", redirect: "url" })))[0];
+    expect(wrapped?.urlKey).toBe(direct?.urlKey);
+  });
+
   it("skips paid results, wherever the container is", () => {
     expect(find(serp(adBlock(), organic())).length).toBe(1);
     expect(find(`<div id="search">${adBlock()}${organic()}</div>`).length).toBe(1);
