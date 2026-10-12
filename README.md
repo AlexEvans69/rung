@@ -1,27 +1,32 @@
-# SERP Counter + Notes - Free SERP Tool for SEO
+<p align="center">
+  <img src="brand/rung-lockup-on-light.svg" alt="rung" width="300">
+</p>
 
-Also works in any Chromium-based browser (Microsoft Edge, Opera, Brave, Vivaldi, etc.).
+# Rung SERP Counter - Free SERP Checker Tool
 
-Adds a counter to organic Google results and lets you save notes for any site (a single URL or the entire domain).
+Numbers every organic result on Google Search and lets you save notes for any site, a single URL or the entire domain.
+Works in Chrome and any other Chromium-based browser (Edge, Opera, Brave, Vivaldi, ...).
 
-Works not only for the top 10 but across all result pages. The extension counts only organic results and ignores
-third-party SERP blocks (Products, People Also Ask, videos and similar) as well as paid ads, so it is a simple way to
-see the exact position of a specific website for any query.
+*Formerly "SERP Counter + Notes".*
 
-**Notes:** add notes to websites directly in the SERP. Apply a note to a specific URL or to an entire domain, so you can
-save quick insights while analysing competitors, or any other text you want to keep next to the results.
+Works across all result pages, not just the top 10. Only organic results are counted: paid ads and SERP blocks such
+as Products and People Also Ask are skipped, so you always see the exact position of a site for any query.
+
+**Notes:** attach a note to a specific URL or to a whole domain to keep quick insights while analyzing competitors,
+or any other text you want to have next to the results.
 
 **Credits:** https://brokenseo.net/ · More info: https://brokenseo.net/blog/serp-counter-extension
 
 ## Features
 
-- Position badge left of every organic result; click it to change the badge colours (live preview, presets,
-  contrast check).
-- Notes per page or per whole site, shown next to the result. The editor adapts to Google's light or dark theme.
+- Position badge left of every organic result; click it to change the badge colours (live preview, 12 presets with a
+  contrast check, optional automatic text colour).
+- Notes per page or per whole site, shown next to the result. The interface follows Google's light or dark theme.
 - Toolbar popup: switch **Numbering** and **Notes** on or off (applies instantly on open tabs), pick a badge
   colour, export and import your notes as JSON.
-- Badges and notes sit on two straight vertical lines, level with each result's title, whatever the height of
-  the result or its thumbnail. The page's own layout is never shifted.
+- Badges and notes sit on two straight vertical lines, level with each result's title, whatever the height of the
+  result. The page's own layout is never shifted.
+- Works signed out and in incognito (Google's redirect links are unwrapped).
 
 ## Privacy
 
@@ -44,8 +49,10 @@ Open `chrome://extensions`, enable *Developer mode*, choose *Load unpacked* and 
 | `npm run dev` | Rebuilds `dist/` on every change (reload the extension in `chrome://extensions`) |
 | `npm run check` | Typecheck + lint + unit tests |
 | `npm test` / `npm run test:watch` | Vitest (jsdom) |
-| `npm run test:e2e` | Builds, then runs the Playwright suite in a real Chromium (`npx playwright install chromium` once) |
-| `npm run package` | Builds and zips `dist/` into `serp-counter-tool.zip` for the store |
+| `npm run test:e2e` | Builds, then runs the Playwright suite in a real Chromium (`npx playwright install chromium` once). Includes loading the built extension and exercising it on a `google.com/search` page |
+| `npm run package` | Builds and zips `dist/` into `rung.zip`, the file the Chrome Web Store takes (`manifest.json` at the zip root) |
+| `npm run store-assets` | Regenerates the store images into `store/` (a real screenshot in `store/real/` is used for the banner) |
+| `node scripts/make-icons.mjs` | Re-renders the PNG icons from `brand/rung-mark-indigo.svg` |
 
 CI runs typecheck, lint, unit tests, build and the e2e suite on every push.
 
@@ -70,9 +77,11 @@ src/
   ui/          Vue 3 components, rendered inside Shadow DOM
   content/     controller.ts reconciles the page with the UI, measure.ts reads the layout
   popup/       toolbar popup (separate Vite build)
+  brand.ts     name, store title and summary in one place
   manifest.ts  manifest generator (version comes from package.json)
+brand/         logo sources (SVG) and the wordmark font licence (Sora, SIL OFL)
 tests/         Vitest + jsdom; SERP markup builders in tests/helpers
-e2e/           Playwright: layout, editor, settings and popup against Google-like fixtures
+e2e/           Playwright: layout, editor, settings, popup and the built extension against Google-like fixtures
 ```
 
 Design decisions worth knowing:
