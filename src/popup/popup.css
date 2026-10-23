@@ -175,3 +175,20 @@ h1 small {
   color: var(--muted);
   font-size: 12px;
 }
+
+.also {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.also a {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.also a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

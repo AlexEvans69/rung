@@ -9,3 +9,10 @@ export const BRAND = {
     "Numbers every organic result on Google Search and pins your notes to any page or whole site. Free, private, no account.",
   color: "#4f46e5",
 } as const;
+
+/** The author's other tool, linked once from the popup footer. */
+export const AUTHOR_TOOL = {
+  name: "allclicks",
+  blurb: "a Search Console dashboard for all your sites",
+  url: "https://allclicks.net/?utm_source=rung&utm_medium=extension&utm_campaign=popup",
+} as const;

@@ -15,6 +15,8 @@ as Products and People Also Ask are skipped, so you always see the exact positio
 **Notes:** attach a note to a specific URL or to a whole domain to keep quick insights while analyzing competitors,
 or any other text you want to have next to the results.
 
+**Also by the author:** [allclicks](https://allclicks.net/?utm_source=rung&utm_medium=readme), a Search Console dashboard for all your sites.
+
 **Credits:** https://brokenseo.net/ · More info: https://brokenseo.net/blog/serp-counter-extension
 
 ## Features

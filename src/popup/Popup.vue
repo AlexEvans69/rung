@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
 import logo from "../../brand/rung-mark-indigo.svg?raw";
-import { BRAND } from "../brand";
+import { AUTHOR_TOOL, BRAND } from "../brand";
 import { PRESETS, toSixDigitHex } from "../core/theme";
 import { backupToStorageItems, buildBackup, parseBackup } from "../storage/backup";
 import type { KeyValueStore } from "../storage/kv";
@@ -153,5 +153,11 @@ async function onFile(event: Event): Promise<void> {
       <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onFile" />
     </footer>
     <p class="status" role="status" aria-live="polite">{{ status }}</p>
+
+    <p class="also muted">
+      Also by the author:
+      <a :href="AUTHOR_TOOL.url" target="_blank" rel="noopener">{{ AUTHOR_TOOL.name }}</a>,
+      {{ AUTHOR_TOOL.blurb }}
+    </p>
   </main>
 </template>

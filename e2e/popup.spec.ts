@@ -43,6 +43,19 @@ async function openPopup(page: Page, seed: Record<string, unknown> = {}, query =
 const mem = (page: Page) => page.evaluate(() => (window as never as { __mem: Record<string, unknown> }).__mem);
 
 test.describe("toolbar popup", () => {
+  test("links the author's other tool once, in a new tab and without leaking the opener", async ({ page }) => {
+    await openPopup(page);
+    const link = page.locator(".also a");
+    await expect(link).toHaveCount(1);
+    await expect(link).toHaveText("allclicks");
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+    const href = new URL((await link.getAttribute("href"))!);
+    expect(href.origin).toBe("https://allclicks.net");
+    expect(href.searchParams.get("utm_source")).toBe("rung");
+    await expect(page.locator(".also")).toContainText("Also by the author");
+  });
+
   test("shows both switches on by default and the version", async ({ page }) => {
     await openPopup(page);
     const switches = page.getByRole("switch");
