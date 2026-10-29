@@ -66,7 +66,8 @@ export class NotesRepository {
     if (urlNote) return { text: urlNote, scope: "url" };
     const siteNote = this.get("site", host);
     if (siteNote) return { text: siteNote, scope: "site" };
-    return { text: "", scope: "url" };
+    // Nothing saved yet: a site note is the useful default; fall back to the page when the site is unknown.
+    return { text: "", scope: host ? "site" : "url" };
   }
 
   /** Saves a note; blank text deletes it. Returns false when `key` is unusable. */

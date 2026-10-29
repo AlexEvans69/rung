@@ -56,6 +56,15 @@ test.describe("toolbar popup", () => {
     await expect(page.locator(".also")).toContainText("Also by the author");
   });
 
+  test("links the tip jar in a new tab and without leaking the opener", async ({ page }) => {
+    await openPopup(page);
+    const link = page.locator(".support a");
+    await expect(link).toHaveCount(1);
+    await expect(link).toHaveAttribute("href", "https://buymeacoffee.com/alexevans69");
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+  });
+
   test("shows both switches on by default and the version", async ({ page }) => {
     await openPopup(page);
     const switches = page.getByRole("switch");

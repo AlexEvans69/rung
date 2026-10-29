@@ -15,7 +15,12 @@ async function repo(initial: Record<string, unknown> = {}) {
 describe("NotesRepository", () => {
   it("returns an empty default note", async () => {
     const { notes } = await repo();
-    expect(notes.getEffective("https://a.example/x", "a.example")).toEqual({ text: "", scope: "url" });
+    expect(notes.getEffective("https://a.example/x", "a.example")).toEqual({ text: "", scope: "site" });
+  });
+
+  it("defaults an empty note to the page when the site is unknown", async () => {
+    const { notes } = await repo();
+    expect(notes.getEffective("https://a.example/x", null)).toEqual({ text: "", scope: "url" });
   });
 
   it("stores each note under its own key", async () => {

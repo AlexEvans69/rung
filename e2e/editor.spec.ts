@@ -25,6 +25,7 @@ test.describe("note editor", () => {
     await expect(editor).toBeVisible();
     await expect(editor.locator("textarea")).toBeFocused();
     await expect(editor.locator(".ed-host")).toHaveText("comparethemarket.com");
+    await expect(editor.getByRole("button", { name: "Whole site" })).toHaveAttribute("aria-pressed", "true");
 
     await editor.locator("textarea").fill("Strong backlinks, check pricing");
     await editor.getByRole("button", { name: "Save" }).click();
@@ -32,7 +33,7 @@ test.describe("note editor", () => {
 
     const card = page.locator("serp-counter-host").nth(1).locator(".card");
     await expect(card.locator(".card-text")).toHaveText("Strong backlinks, check pricing");
-    await expect(card.locator(".tag")).toHaveText("Page");
+    await expect(card.locator(".tag")).toHaveText("Site");
 
     const [head, title] = await Promise.all([
       card.locator(".card-head").boundingBox(),

@@ -17,6 +17,8 @@ or any other text you want to have next to the results.
 
 **Also by the author:** [allclicks](https://allclicks.net/?utm_source=rung&utm_medium=readme), a Search Console dashboard for all your sites.
 
+**Support:** Rung is free. If it saves you time, [buy me a coffee](https://buymeacoffee.com/alexevans69).
+
 **Credits:** https://brokenseo.net/ · More info: https://brokenseo.net/blog/serp-counter-extension
 
 ## Features

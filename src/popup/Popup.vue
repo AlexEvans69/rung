@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
 import logo from "../../brand/rung-mark-indigo.svg?raw";
-import { AUTHOR_TOOL, BRAND } from "../brand";
+import { AUTHOR_TOOL, BRAND, SUPPORT } from "../brand";
 import { PRESETS, toSixDigitHex } from "../core/theme";
 import { backupToStorageItems, buildBackup, parseBackup } from "../storage/backup";
 import type { KeyValueStore } from "../storage/kv";
@@ -157,7 +157,12 @@ async function onFile(event: Event): Promise<void> {
     <p class="also muted">
       Also by the author:
       <a :href="AUTHOR_TOOL.url" target="_blank" rel="noopener">{{ AUTHOR_TOOL.name }}</a>,
-      {{ AUTHOR_TOOL.blurb }}
+      {{ AUTHOR_TOOL.blurb }}.
+    </p>
+
+    <p class="support muted">
+      Rung is free. If it saves you time,
+      <a :href="SUPPORT.url" target="_blank" rel="noopener">{{ SUPPORT.label.toLowerCase() }}</a>.
     </p>
   </main>
 </template>

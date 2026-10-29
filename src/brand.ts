@@ -10,6 +10,12 @@ export const BRAND = {
   color: "#4f46e5",
 } as const;
 
+/** Optional tip jar, linked from the popup footer. */
+export const SUPPORT = {
+  label: "Buy me a coffee",
+  url: "https://buymeacoffee.com/alexevans69",
+} as const;
+
 /** The author's other tool, linked once from the popup footer. */
 export const AUTHOR_TOOL = {
   name: "allclicks",

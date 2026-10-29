@@ -183,12 +183,19 @@ h1 small {
   font-size: 12px;
 }
 
-.also a {
+.also a,
+.support a {
   color: var(--fg);
   font-weight: 500;
 }
 
-.also a:focus-visible {
+.support {
+  margin: 0;
+  font-size: 12px;
+}
+
+.also a:focus-visible,
+.support a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
